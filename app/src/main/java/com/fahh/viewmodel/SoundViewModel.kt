@@ -85,6 +85,12 @@ class SoundViewModel @Inject constructor(
         }
     }
 
+    fun unlockSound(soundName: String) {
+        viewModelScope.launch {
+            repository.unlockSound(soundName)
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         soundManager.release()

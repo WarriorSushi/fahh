@@ -19,6 +19,7 @@ import javax.inject.Singleton
 @Singleton
 class CameraManager @Inject constructor(@ApplicationContext private val context: Context) {
     private var videoCapture: VideoCapture<Recorder>? = null
+    private var cameraProvider: ProcessCameraProvider? = null
 
     fun startCamera(
         lifecycleOwner: LifecycleOwner,
@@ -32,6 +33,7 @@ class CameraManager @Inject constructor(@ApplicationContext private val context:
             {
                 try {
                     val cameraProvider = cameraProviderFuture.get()
+                    this.cameraProvider = cameraProvider
 
                     previewView.implementationMode = PreviewView.ImplementationMode.COMPATIBLE
                     previewView.scaleType = PreviewView.ScaleType.FILL_CENTER
@@ -66,5 +68,10 @@ class CameraManager @Inject constructor(@ApplicationContext private val context:
             },
             ContextCompat.getMainExecutor(context)
         )
+    }
+
+    fun releaseCamera() {
+        cameraProvider?.unbindAll()
+        videoCapture = null
     }
 }

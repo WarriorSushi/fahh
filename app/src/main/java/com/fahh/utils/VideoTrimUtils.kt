@@ -3,6 +3,7 @@ package com.fahh.utils
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
+import android.media.MediaMetadataRetriever
 import android.media.MediaMuxer
 import java.io.File
 import java.nio.ByteBuffer
@@ -12,11 +13,21 @@ object VideoTrimUtils {
         inputFile: File,
         outputFile: File,
         startMs: Long,
-        endMs: Long
+        endMs: Long,
+        extraRotationDegrees: Int = 0
     ) {
         require(startMs >= 0L) { "startMs must be >= 0" }
         require(endMs > startMs) { "endMs must be > startMs" }
         require(inputFile.exists()) { "Input file does not exist" }
+
+        // Read rotation from source so trimmed output preserves orientation
+        val rotation = try {
+            val retriever = MediaMetadataRetriever()
+            retriever.setDataSource(inputFile.absolutePath)
+            val rot = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
+            retriever.release()
+            rot
+        } catch (_: Exception) { 0 }
 
         val extractor = MediaExtractor()
         val muxer: MediaMuxer
@@ -24,6 +35,10 @@ object VideoTrimUtils {
         try {
             extractor.setDataSource(inputFile.absolutePath)
             muxer = MediaMuxer(outputFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+            val finalRotation = (rotation + extraRotationDegrees) % 360
+            if (finalRotation != 0) {
+                muxer.setOrientationHint(finalRotation)
+            }
 
             val trackIndexMap = HashMap<Int, Int>()
             var maxBufferSize = 1024 * 1024

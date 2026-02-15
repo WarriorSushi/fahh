@@ -24,6 +24,10 @@ class SoundRepository @Inject constructor(private val soundDao: SoundDao) {
         soundDao.unlockPack(packName)
     }
 
+    suspend fun unlockSound(soundName: String) {
+        soundDao.unlockSound(soundName)
+    }
+
     private fun SoundEntity.toModel() = Sound(
         name = name,
         resId = resId,

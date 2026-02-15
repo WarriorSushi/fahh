@@ -63,6 +63,10 @@ class CameraViewModel @Inject constructor(
         )
     }
 
+    fun releaseCamera() {
+        cameraManager.releaseCamera()
+    }
+
     fun toggleCamera() {
         _cameraSelector.value = if (_cameraSelector.value == CameraSelector.DEFAULT_BACK_CAMERA) {
             CameraSelector.DEFAULT_FRONT_CAMERA

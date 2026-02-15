@@ -137,36 +137,51 @@ fun ShareScreen(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Surface(
                         onClick = onTrim,
-                        modifier = Modifier.weight(1f).height(60.dp),
-                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        shape = RoundedCornerShape(14.dp),
                         color = Color.White.copy(alpha = 0.12f),
                         contentColor = Color.White
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(imageVector = Icons.Default.ContentCut, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Trim", fontWeight = FontWeight.Bold, color = Color.White)
+                                Icon(imageVector = Icons.Default.ContentCut, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Trim", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.White)
+                            }
+                        }
+                    }
+
+                    // Saved indicator
+                    Surface(
+                        modifier = Modifier.height(52.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFF10B981).copy(alpha = 0.15f)
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 14.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFF10B981))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Saved", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF10B981))
                             }
                         }
                     }
 
                     Surface(
                         onClick = onDelete,
-                        modifier = Modifier.weight(1f).height(60.dp),
-                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        shape = RoundedCornerShape(14.dp),
                         color = Color.White.copy(alpha = 0.12f),
                         contentColor = Color.White
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(imageVector = Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Red.copy(alpha = 0.8f))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Delete", fontWeight = FontWeight.Bold, color = Color.Red.copy(alpha = 0.8f))
+                                Icon(imageVector = Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Red.copy(alpha = 0.8f))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Delete", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.Red.copy(alpha = 0.8f))
                             }
                         }
                     }

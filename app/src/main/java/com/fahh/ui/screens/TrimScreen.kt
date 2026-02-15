@@ -11,11 +11,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,6 +50,8 @@ fun TrimScreen(
     var trimRange by remember(durationSec) { mutableStateOf(0f..durationSec) }
     var isSaving by remember { mutableStateOf(false) }
     var videoViewRef by remember { mutableStateOf<VideoView?>(null) }
+    var isPlaying by remember { mutableStateOf(false) }
+    var extraRotation by remember { mutableStateOf(0) } // 0, 90, 180, 270
 
     Box(modifier = Modifier.fillMaxSize().background(Background)) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -64,12 +68,19 @@ fun TrimScreen(
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
-                    text = "TRIM REACTION",
+                    text = "EDIT REACTION",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White,
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 1.sp
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.weight(1f)
                 )
+                IconButton(
+                    onClick = { extraRotation = (extraRotation + 90) % 360 },
+                    modifier = Modifier.premiumGlass(CircleShape, alpha = 0.1f).size(48.dp)
+                ) {
+                    Icon(Icons.Default.RotateRight, contentDescription = "Rotate", tint = Color.White)
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -94,21 +105,26 @@ fun TrimScreen(
                             videoViewRef = this
                         }
                     },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { rotationZ = extraRotation.toFloat() }
                 )
 
-                Surface(
-                    onClick = {
-                        videoViewRef?.let { view ->
-                            if (view.isPlaying) view.pause() else view.start()
+                if (!isPlaying) {
+                    Surface(
+                        onClick = {
+                            videoViewRef?.let { view ->
+                                view.start()
+                                isPlaying = true
+                            }
+                        },
+                        shape = CircleShape,
+                        color = Color.Black.copy(alpha = 0.4f),
+                        modifier = Modifier.size(64.dp).premiumGlass(CircleShape, alpha = 0.1f)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
                         }
-                    },
-                    shape = CircleShape,
-                    color = Color.Black.copy(alpha = 0.4f),
-                    modifier = Modifier.size(64.dp).premiumGlass(CircleShape, alpha = 0.1f)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
                     }
                 }
             }
@@ -141,7 +157,10 @@ fun TrimScreen(
                                 }
                                 // Live scrub: pause and seek to the start of the selected range
                                 videoViewRef?.let { view ->
-                                    if (view.isPlaying) view.pause()
+                                    if (view.isPlaying) {
+                                        view.pause()
+                                        isPlaying = false
+                                    }
                                     view.seekTo((trimRange.start * 1000f).toInt())
                                 }
                             }
@@ -198,7 +217,7 @@ fun TrimScreen(
 
                         val result = withContext(Dispatchers.IO) {
                             runCatching {
-                                VideoTrimUtils.trimVideo(sourceFile, outputFile, startMs, endMs)
+                                VideoTrimUtils.trimVideo(sourceFile, outputFile, startMs, endMs, extraRotation)
                                 outputFile
                             }
                         }

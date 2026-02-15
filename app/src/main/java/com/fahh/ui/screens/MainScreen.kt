@@ -28,7 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -186,7 +186,7 @@ fun MainScreen(
                             activity = activity,
                             rewardedAd = ad,
                             onRewardEarned = {
-                                viewModel.unlockPack(sound.packName)
+                                viewModel.unlockSound(sound.name)
                                 viewModel.selectSound(sound.copy(isLocked = false))
                                 showConfetti = true
                                 clearSidebarNotice()
@@ -311,6 +311,12 @@ private fun MainContent(
                 )
         )
 
+        // Tiny swipe hint on right edge
+        SwipeEdgeTab(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+        )
+
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
@@ -330,7 +336,7 @@ private fun MainContent(
                                 .premiumGlass(CircleShape, alpha = 0.05f)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Menu,
+                                imageVector = Icons.Default.GridView,
                                 contentDescription = "Open sound menu",
                                 tint = Color.White
                             )
@@ -346,27 +352,6 @@ private fun MainContent(
                     .padding(padding),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Swipe hint
-                SwipeHintChip(
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-
-                // Sound name badge
-                Spacer(modifier = Modifier.height(12.dp))
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Primary.copy(alpha = 0.1f)
-                ) {
-                    Text(
-                        text = selectedSound.name.uppercase(),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Primary,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 2.sp,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                    )
-                }
-
                 // Main button area
                 Box(
                     modifier = Modifier
@@ -420,41 +405,32 @@ private fun MainContent(
 }
 
 @Composable
-private fun SwipeHintChip(modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "swipeHint")
-    val shift by transition.animateFloat(
+private fun SwipeEdgeTab(modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "edgeTab")
+    val nudge by transition.animateFloat(
         initialValue = 0f,
-        targetValue = -7f,
+        targetValue = -3f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 950),
+            animation = tween(durationMillis = 1200),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "swipeHintShift"
+        label = "edgeNudge"
     )
 
     Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = Color(0xFF1A2438),
-        shadowElevation = 8.dp,
+        shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp),
+        color = Color.White.copy(alpha = 0.08f),
         modifier = modifier
+            .offset(x = nudge.dp)
+            .width(16.dp)
+            .height(48.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
-        ) {
+        Box(contentAlignment = Alignment.Center) {
             Icon(
                 imageVector = Icons.Default.ChevronLeft,
-                contentDescription = null,
-                tint = Color(0xFFFFAFA0),
-                modifier = Modifier
-                    .size(20.dp)
-                    .offset(x = shift.dp)
-            )
-            Text(
-                text = "Swipe from right edge for sounds",
-                style = MaterialTheme.typography.labelMedium,
-                color = Color(0xFFD7E3FF),
-                modifier = Modifier.padding(start = 2.dp)
+                contentDescription = "Swipe for sounds",
+                tint = Color.White.copy(alpha = 0.4f),
+                modifier = Modifier.size(14.dp)
             )
         }
     }

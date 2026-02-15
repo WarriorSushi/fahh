@@ -5,8 +5,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.material3.Divider
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -35,6 +37,9 @@ fun SoundGrid(
     onSoundSelected: (Sound) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val unlocked = sounds.filter { !it.isLocked }
+    val locked = sounds.filter { it.isLocked }
+
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         contentPadding = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
@@ -42,13 +47,30 @@ fun SoundGrid(
         verticalArrangement = Arrangement.spacedBy(10.dp),
         modifier = modifier
     ) {
-        itemsIndexed(sounds) { _, sound ->
+        itemsIndexed(unlocked) { _, sound ->
             SoundTile(
                 sound = sound,
                 isSelected = sound == selectedSound,
                 onPreview = { onSoundPreview(sound) },
                 onSelect = { onSoundSelected(sound) }
             )
+        }
+        if (locked.isNotEmpty()) {
+            item(span = { GridItemSpan(2) }) {
+                Divider(
+                    color = Color.White.copy(alpha = 0.08f),
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(vertical = 6.dp)
+                )
+            }
+            itemsIndexed(locked) { _, sound ->
+                SoundTile(
+                    sound = sound,
+                    isSelected = sound == selectedSound,
+                    onPreview = { onSoundPreview(sound) },
+                    onSelect = { onSoundSelected(sound) }
+                )
+            }
         }
     }
 }
@@ -62,15 +84,16 @@ private fun SoundTile(
 ) {
     val tileColor = when {
         isSelected -> Primary.copy(alpha = 0.18f)
-        sound.isLocked -> Color.White.copy(alpha = 0.04f)
-        else -> Color.White.copy(alpha = 0.08f)
+        sound.isLocked -> Color.White.copy(alpha = 0.02f)
+        else -> Color.White.copy(alpha = 0.10f)
     }
 
-    val borderBrush = if (isSelected) {
-        Brush.verticalGradient(listOf(Primary, Primary.copy(alpha = 0.4f)))
-    } else {
-        Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.10f), Color.White.copy(alpha = 0.03f)))
+    val borderBrush = when {
+        isSelected -> Brush.verticalGradient(listOf(Primary, Primary.copy(alpha = 0.4f)))
+        sound.isLocked -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.04f), Color.White.copy(alpha = 0.02f)))
+        else -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.12f), Color.White.copy(alpha = 0.05f)))
     }
+
 
     Card(
         shape = RoundedCornerShape(16.dp),

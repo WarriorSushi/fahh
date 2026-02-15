@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.DisposableEffect
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.video.Recorder
@@ -20,20 +21,24 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.fahh.ui.components.SidebarMenu
 import com.fahh.ui.components.SoundButton
 import com.fahh.ui.theme.Primary
 import com.fahh.ui.theme.premiumGlass
@@ -68,8 +73,11 @@ fun CameraScreen(
     val isRecording by cameraViewModel.isRecording.collectAsState()
     val timer by cameraViewModel.recordingTimer.collectAsState()
     val selectedSound by soundViewModel.selectedSound.collectAsState()
+    val sounds by soundViewModel.allSounds.collectAsState()
+    val volume by soundViewModel.volume.collectAsState()
     val cameraSelector by cameraViewModel.cameraSelector.collectAsState()
     val cameraPermissions = remember { requiredCameraPermissions() }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
     var hasPermissions by remember { mutableStateOf(false) }
     var videoCapture by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
@@ -107,6 +115,41 @@ fun CameraScreen(
 
     BackHandler { onBack() }
 
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraViewModel.releaseCamera()
+        }
+    }
+
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = !isRecording,
+        drawerContent = {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                SidebarMenu(
+                    sounds = sounds,
+                    selectedSound = selectedSound,
+                    volume = volume,
+                    onVolumeChange = { soundViewModel.updateVolume(it) },
+                    onSoundPreview = { sound ->
+                        if (!sound.isLocked) soundViewModel.playSoundPreview(sound)
+                    },
+                    onSoundSelected = { sound ->
+                        if (!sound.isLocked) {
+                            soundViewModel.selectSound(sound)
+                            scope.launch { drawerState.close() }
+                        }
+                    },
+                    noticeMessage = null,
+                    onDismissNotice = {},
+                    onClose = { scope.launch { drawerState.close() } },
+                    onPrivacyClick = {}
+                )
+            }
+        }
+    ) {
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (hasPermissions) {
             AndroidView(
@@ -167,13 +210,14 @@ fun CameraScreen(
                         }
                     }
 
+                    // Sounds drawer button (top right)
                     IconButton(
-                        onClick = { if (!isRecording) cameraViewModel.toggleCamera() },
+                        onClick = { scope.launch { drawerState.open() } },
                         modifier = Modifier
                             .premiumGlass(CircleShape, alpha = 0.1f)
                             .size(48.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.FlipCameraAndroid, contentDescription = "Flip", tint = Color.White)
+                        Icon(imageVector = Icons.Default.GridView, contentDescription = "Sounds", tint = Color.White)
                     }
                 }
 
@@ -199,17 +243,26 @@ fun CameraScreen(
                 }
 
                 // Bottom Controls
-                Box(
+                Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .padding(bottom = 32.dp, start = 24.dp, end = 24.dp)
+                        .padding(bottom = 32.dp, start = 24.dp, end = 24.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Record button — center
-                    Column(
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    // Camera switch — left
+                    IconButton(
+                        onClick = { if (!isRecording) cameraViewModel.toggleCamera() },
+                        modifier = Modifier
+                            .premiumGlass(CircleShape, alpha = 0.1f)
+                            .size(60.dp)
                     ) {
+                        Icon(imageVector = Icons.Default.Cameraswitch, contentDescription = "Switch Camera", tint = Color.White, modifier = Modifier.size(26.dp))
+                    }
+
+                    // Record button — center
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Surface(
                             shape = CircleShape,
                             color = if (isRecording) Color.Transparent else Color.White,
@@ -237,7 +290,7 @@ fun CameraScreen(
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = if (isRecording) "STOP" else "TAP TO RECORD",
                             color = Color.White.copy(alpha = 0.6f),
@@ -247,18 +300,12 @@ fun CameraScreen(
                         )
                     }
 
-                    // Sound button — bottom right
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(bottom = 8.dp)
-                    ) {
-                        SoundButton(
-                            sound = selectedSound,
-                            onClick = { soundViewModel.playSelectedSound() },
-                            buttonSize = 70.dp
-                        )
-                    }
+                    // Sound button — right (same height as record)
+                    SoundButton(
+                        sound = selectedSound,
+                        onClick = { soundViewModel.playSelectedSound() },
+                        buttonSize = 60.dp
+                    )
                 }
             }
         } else {
@@ -267,6 +314,9 @@ fun CameraScreen(
 
         SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
     }
+    } // CompositionLocalProvider Ltr
+    } // ModalNavigationDrawer
+    } // CompositionLocalProvider Rtl
 }
 
 @Composable

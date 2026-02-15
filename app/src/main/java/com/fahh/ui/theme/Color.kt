@@ -5,7 +5,7 @@ import androidx.compose.ui.graphics.Color
 // Core Premium Palette
 val Primary = Color(0xFFFF5A3B)  // Vibrant Coral/Orange-Red
 val Secondary = Color(0xFF3B82F6) // Electric Blue
-val Background = Color(0xFF040608) // Deep Obsidian
+val Background = Color(0xFF0A0E14) // Deep Obsidian
 val Surface = Color(0xFF0D1117)    // Dark Navy surface
 val OnPrimary = Color(0xFFFFFFFF)
 val OnBackground = Color(0xFFF0F4F8)
