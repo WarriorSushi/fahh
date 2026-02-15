@@ -91,7 +91,7 @@ import com.google.android.gms.ads.rewarded.RewardedAd
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private const val RewardedAdUnitId = "ca-app-pub-3940256099942544/5224354917"
+private const val RewardedAdUnitId = "ca-app-pub-1006057089920582/1635547968"
 
 private data class SidebarNotice(
     val token: Long,

@@ -35,7 +35,7 @@ private val warmMessages = listOf(
     "Ad incoming — blame capitalism, not us."
 )
 
-private const val InterstitialAdUnitId = "ca-app-pub-3940256099942544/1033173712" // TEST ID
+private const val InterstitialAdUnitId = "ca-app-pub-1006057089920582/1786766790"
 
 @Composable
 fun AdTransitionScreen(

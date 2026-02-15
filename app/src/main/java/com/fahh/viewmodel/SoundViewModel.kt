@@ -105,11 +105,18 @@ class SoundViewModel @Inject constructor(
 
     /**
      * Increments recording count and returns whether an ad should be shown.
-     * Ads start after 5th recording, then every 3rd recording (6, 9, 12, 15...).
+     * Recordings 6–11: every 3rd (6, 9)
+     * Recordings 12–19: every 2nd (12, 14, 16, 18)
+     * Recordings 20+: every recording
      */
     suspend fun onRecordingFinished(): Boolean {
         val count = settingsRepository.incrementRecordingCount()
-        return count > 5 && (count - 6) % 3 == 0
+        return when {
+            count >= 20 -> true
+            count >= 12 -> count % 2 == 0
+            count >= 6 -> (count - 6) % 3 == 0
+            else -> false
+        }
     }
 
     override fun onCleared() {

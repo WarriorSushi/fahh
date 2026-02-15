@@ -1,105 +1,105 @@
-# Fahh — Google Play Store Listing
+# FAHH — Play Store Listing (Final)
+
+Copy-paste ready. Every field below maps directly to a Play Console field.
 
 ---
 
-## App Name (30 char max)
+## App Name
+
 ```
-Fahh: Meme Sound Prank Camera
+Fahh: Meme Sound Reaction Cam
 ```
+30 characters. Exact limit.
 
 ---
 
-## Tagline
-```
-Turn Any Moment Into a Meme
-```
+## Short Description
 
----
-
-## Short Description (80 char max)
 ```
-Record your friends' reactions with live meme sounds. Instant funny content.
+Play meme sounds WHILE recording video. Capture live reactions instantly.
 ```
+73 characters. Keywords: meme sounds, recording, video, reactions.
+Does not repeat anything from the full description.
 
 ---
 
 ## Full Description
 
 ```
-Your friends say something dumb. You pull out Fahh. Hit the Vine Boom. You're already recording their face. The clip is gold. Posted in 10 seconds.
+Your friend says something dumb. You open Fahh. Hit Vine Boom. You're already recording their face. The clip is gold. Shared in 10 seconds.
 
-That's Fahh.
+No other soundboard lets you do this.
 
-Not just another soundboard collecting dust — Fahh is a meme moment machine. Pick a sound, open the camera, and film your friends while the sound plays LIVE. Their reaction? Captured forever. Shared everywhere.
+Fahh plays meme sounds through your speaker WHILE your camera records. The sound, the reaction, the chaos — all captured in one video. No editing. No syncing audio later. Just press and record.
 
-🎥 RECORD WITH LIVE MEME SOUNDS
-This is what makes Fahh different from every other soundboard app. Open the camera, tap the sound button while filming, and the meme sound plays through the speaker — your video captures everything. The sound. The reaction. The chaos. No editing needed.
+🎥 HOW IT WORKS
+Open the camera. Pick a meme sound. Tap the button while filming. The sound blasts live. Your friend's reaction is captured forever. Done.
 
-Perfect for:
-• Catching your friend off guard with a Vine Boom zoom-in
-• Playing the Bruh sound when someone says something wild
-• Adding "Directed by Robert B. Weide" to the end of a fail
-• Dropping an Air Horn when your friend finally scores
-• Hitting the dramatic Dun Dun Dunn during a plot twist moment
+🔴 THE BUTTON
+A giant 3D button that actually feels real. It sinks when you press it. Haptic feedback punches your finger. The sound fires instantly. It's embarrassingly satisfying. You'll press it 47 times before you even open the camera.
 
-🔴 THE BIG BUTTON
-One giant, 3D button that feels real. Press it. Feel the haptic punch. Watch it sink. Hear the sound blast. It's stupidly satisfying.
+🔊 12 SOUNDS INCLUDED
+   Fahh · Bruh · Vine Boom · Wow
+   Air Horn · Dun Dun Dunn · Oh My God
+   Directed By · Romance Sax · Sudden Suspense
+   Yoooo Japan · Gop Gop Gop
+   New sounds added with updates.
 
-🎬 EDIT AND SHARE INSTANTLY
-• Trim your clips right inside the app
-• Rotate videos if needed
-• Share directly to TikTok, Instagram Reels, YouTube Shorts, Snapchat, WhatsApp
-• No watermark. No account. No nonsense.
-
-🔊 SOUNDS THAT HIT DIFFERENT
-• Fahh — the OG
-• Bruh — certified bruh moment
-• Vine Boom — dramatic zoom energy
-• Wow — Owen Wilson core
-• Air Horn — MLG tournament vibes
-• Dun Dun Dunn — the dramatic reveal
-• Oh My God — peak reaction
-• Directed By — Robert B. Weide credits
-• Romance Sax — when things get spicy
-• Yoooo Japan — unhinged energy
-• Gop Gop Gop — pure chaos
-• More sounds added regularly
+🎬 EDIT & SHARE
+ ▸ Trim clips inside the app
+ ▸ Rotate videos
+ ▸ Share to TikTok, Reels, Shorts, Snapchat, WhatsApp
+ ▸ No watermark
+ ▸ No account needed
 
 ⚡ ZERO FRICTION
-• No sign-up. No account. No tutorials.
-• Works completely offline
-• Under 10MB — lighter than a voice note
-• Haptic feedback on every press
-• Switch between front and back camera while recording
+ ▸ No sign-up
+ ▸ Works completely offline
+ ▸ Under 10 MB
+ ▸ Front and back camera switch while recording
+ ▸ Haptic feedback on every press
 
-📱 MADE FOR CONTENT CREATORS
-Whether you're making TikToks in your bedroom or filming your friend group losing it at lunch — Fahh turns your phone into a meme production studio. Sound + Camera + Share. Three taps to viral.
+📱 MADE FOR SHORT-FORM CONTENT
+Fahh is the fastest way to make reaction content for TikTok, Instagram Reels, and YouTube Shorts. Sound + Camera + Share. Three taps from moment to post.
 
-Other soundboard apps let you press buttons alone in your room. Fahh puts the sound INTO your videos, INTO the moment, and INTO your friends' nightmares.
+Every soundboard app lets you press buttons alone in your room. Fahh puts the sound into the video, into the moment, and into your friends' nightmares.
 
-Download Fahh. Press the button. Record the chaos.
+Press the button. Record the chaos.
 ```
+
+~1,500 characters. Punchy, scannable, keyword-rich without stuffing.
+
+First 3 lines (visible before "Read more") are the hook — they tell the exact use case in a story.
+
+Keyword placement:
+  meme sound/sounds — 3x (natural)
+  camera/cam — 2x
+  record/recording — 3x
+  reaction/reactions — 3x
+  soundboard — 1x
+  prank — 0x (in title context already)
+  TikTok, Reels, Shorts — 1x each
+  vine boom, bruh, air horn — 1x each (long-tail captures)
 
 ---
 
 ## Category
+
 ```
 Entertainment
 ```
 
 ---
 
-## Tags / Keywords
+## Privacy Policy URL
+
 ```
-meme sounds, soundboard, meme camera, reaction video, sound effects, vine boom,
-bruh sound effect, funny sounds, prank camera, meme button, sound button,
-tiktok sounds, air horn, meme soundboard, reaction sounds, funny soundboard,
-prank sounds, meme video maker, sound prank, funny camera app
+https://tracker.dog/fahh-privay-policy/
 ```
 
 ---
 
-## Content Rating Questionnaire
+## Content Rating Answers
 
 | Question | Answer |
 |----------|--------|
@@ -107,111 +107,113 @@ prank sounds, meme video maker, sound prank, funny camera app
 | Sexual content | No |
 | Profanity / Language | No |
 | Controlled substances | No |
-| User interaction (chat, multiplayer) | No |
-| Shares user location | No |
+| User interaction | No |
+| Shares location | No |
 | In-app purchases | No |
 | Contains ads | Yes |
 
-**Expected rating: Everyone / PEGI 3**
+Rating: Everyone
 
 ---
 
-## Privacy Policy
+## Data Safety (Play Console)
 
-Host this on a Google Doc (File > Share > Publish to web) or a free Google Sites page.
-Use the published URL in the Play Console "Privacy Policy" field.
+**Does your app collect or share user data?** Yes
 
-```
-Privacy Policy for Fahh
+| Data type | Collected | Shared | Purpose |
+|-----------|-----------|--------|---------|
+| Device identifiers (Ad ID) | Yes | Yes — Google AdMob | Advertising |
+| Photos / Videos | No — stored on device only | No | — |
+| Personal info | No | No | — |
+| Location | No | No | — |
+| App activity | No | No | — |
 
-Last updated: February 2026
-
-Fahh ("the App") is developed and maintained by [Your Name/Company].
-
-DATA COLLECTION
-We do not collect, store, or transmit any personal data. All videos, sound
-preferences, and app settings are stored locally on your device and never
-leave it.
-
-PERMISSIONS
-- Camera: Required to record videos with live meme sounds.
-- Microphone: Required to capture audio during video recording.
-- Storage (Android 9 and below): Required to save recorded videos to your
-  device gallery. On Android 10+, no storage permission is needed.
-- Vibration: Used for haptic feedback when pressing the sound button.
-- Internet: Used solely for serving advertisements.
-
-ADVERTISEMENTS
-We use Google AdMob to display advertisements. AdMob may collect and use
-device identifiers (such as Advertising ID) and usage data for ad
-personalization and measurement. You can learn more about Google's data
-practices at: https://policies.google.com/privacy
-
-You can opt out of personalized ads through your device settings:
-Settings > Google > Ads > Opt out of Ads Personalization
-
-THIRD-PARTY SERVICES
-The only third-party service integrated is Google AdMob for advertisements.
-We do not integrate any analytics, tracking, or data collection SDKs beyond
-what AdMob requires.
-
-DATA SHARING
-We do not sell, trade, rent, or share any user data with third parties.
-Video sharing to social media platforms (TikTok, Instagram, WhatsApp, etc.)
-is initiated solely by the user through the Android share system.
-
-CHILDREN'S PRIVACY
-Fahh does not knowingly collect any information from children under the age
-of 13. The app does not require any form of registration or personal
-information input.
-
-DATA RETENTION
-Since we do not collect any data, there is nothing to retain or delete.
-All app data can be cleared by the user through Android Settings > Apps >
-Fahh > Clear Data.
-
-CHANGES TO THIS POLICY
-We may update this privacy policy from time to time. Any changes will be
-reflected in the "Last updated" date above.
-
-CONTACT
-For questions or concerns about this privacy policy, contact:
-[Your email address]
-```
+**Is all data encrypted in transit?** Yes
+**Can users request deletion?** Not applicable — no data stored on servers
 
 ---
 
-## Store Listing Assets Needed
+## Screenshots (take 5–6, in this order)
 
-| Asset | Size | Status |
-|-------|------|--------|
-| App icon | 512x512 PNG | Have it (Fahh logo (2).png) |
-| Feature graphic | 1024x500 PNG | Need to create |
-| Phone screenshots | Min 2, recommended 5-8 | Take from device |
-| Short description | 80 chars | Done (above) |
-| Full description | 4000 chars | Done (above) |
-| Privacy policy URL | https://tracker.dog/fahh-privay-policy/ | Done |
+Phone screenshots only. Dark background matches the app naturally.
+Add short captions using Canva (free) — white bold text, 1 line max.
+
+| # | What to capture | Caption overlay |
+|---|-----------------|-----------------|
+| 1 | Main screen, big red button | "One satisfying button." |
+| 2 | Camera mode, recording with sound button visible | "Record reactions with live sounds." |
+| 3 | Sidebar open, all 12 sounds visible | "12 meme sounds. More coming." |
+| 4 | Share screen after recording | "Share anywhere. No watermark." |
+| 5 | Trim/edit screen | "Trim and rotate in-app." |
+| 6 | Button mid-press with particles | "That press though." |
+
+How to make screenshot graphics:
+1. Take raw screenshots on your phone
+2. Go to canva.com → Custom size → 1080x1920
+3. Place screenshot in center (scale to ~80%)
+4. Add caption text below: white, bold, 40–48pt
+5. Background: #0A0E14 (your app's background color)
+6. Export as PNG
 
 ---
 
-## ASO Tips for Ranking
+## Feature Graphic
 
-1. **First 3 lines matter most** — Play Store only shows the first few lines
-   before "Read more". The opening hook sells the download.
+Already generated: `feature_graphic.png` (1024x500)
 
-2. **Screenshots should tell a story** — Show the button, the camera mode,
-   the recording, and the share flow. Add captions on each screenshot.
+---
 
-3. **Feature graphic** — This appears at the top of your listing. Make it
-   bold with the logo and tagline "Turn Any Moment Into a Meme".
+## App Icon
 
-4. **Ratings matter immediately** — Ask friends to download and rate 5 stars
-   in the first week. Early ratings heavily influence ranking.
+512x512 PNG, no transparency. Use existing Fahh logo.
+Make sure it looks good at 48x48 (how it appears in search results).
 
-5. **Update regularly** — Google ranks apps that update frequently higher.
-   Adding a new sound every 2 weeks gives you a reason to push updates.
+---
 
-6. **Reply to every review** — Google rewards developer engagement.
+## Launch Playbook
 
-7. **Keyword density** — The full description naturally repeats key terms
-   (meme, sound, camera, record, reaction, prank) without stuffing.
+### Before submitting
+
+1. Replace test ad unit IDs with real AdMob IDs
+   - Rewarded: replace in MainScreen.kt (`RewardedAdUnitId`)
+   - Interstitial: replace in AdTransitionScreen.kt
+   - Get these from admob.google.com after creating ad units
+
+2. Build final AAB:
+   ```
+   FAHH_KEYSTORE_PASSWORD=fahhapp2026 FAHH_KEY_ALIAS=fahh FAHH_KEY_PASSWORD=fahhapp2026 ./gradlew bundleRelease
+   ```
+
+### Play Console steps
+
+1. Go to play.google.com/console
+2. Pay $25 one-time developer fee
+3. Complete identity verification (1–2 days)
+4. Click "Create app" → fill in name, language, free, app (not game)
+5. Fill in every section under "Grow > Store presence > Main store listing" using the fields above
+6. Fill in "Policy > App content" sections:
+   - Privacy policy URL
+   - Ads declaration
+   - Target audience (select 13+ or 18+)
+   - Content rating questionnaire
+   - Data safety
+7. Go to "Release > Testing > Internal testing"
+8. Create a release → upload the AAB
+9. Add yourself and friends as testers (email list)
+10. Test for 2–3 days
+11. When ready: "Release > Production" → Create release → upload same AAB
+12. Submit for review (1–3 days)
+
+### First week after going live
+
+- Get 10–20 ratings from friends/family immediately
+- Reply to every single review
+- Share the Play Store link on your socials
+- Post a TikTok/Reel showing the app in action
+
+### Ongoing (what keeps you ranking)
+
+- Add 1–2 new sounds every 2–4 weeks (each update boosts ranking)
+- Respond to all reviews within 24 hours
+- Monitor crash reports in Play Console → fix quickly
+- A/B test icon and screenshots after 500+ installs
