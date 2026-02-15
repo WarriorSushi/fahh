@@ -14,5 +14,6 @@ local.properties
 *.hprof
 *.jks
 *.keystore
-Screenshot*.png
+/Screenshot*.png
 feature_graphic.png
+fahh play listing iamges mobile/

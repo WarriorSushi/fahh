@@ -6,9 +6,21 @@
 
 <p align="center"><b>The meme sound reaction camera.</b></p>
 
-Press a big red button. A meme sound blasts through your speaker. Your camera is already rolling. Your friend's face is priceless. Share it everywhere.
+<p align="center">
+  Press a big red button. A meme sound blasts through your speaker.<br/>
+  Your camera is already rolling. Your friend's face is priceless.<br/>
+  Share it everywhere.
+</p>
 
-That's the whole app.
+---
+
+<p align="center">
+  <img src="assets/screenshot_1.png" width="160" />
+  <img src="assets/screenshot_2.png" width="160" />
+  <img src="assets/screenshot_3.png" width="160" />
+  <img src="assets/screenshot_4.png" width="160" />
+  <img src="assets/screenshot_5.png" width="160" />
+</p>
 
 ---
 
