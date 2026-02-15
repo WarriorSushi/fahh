@@ -9,7 +9,6 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,31 +42,30 @@ fun SoundButton(
     val isPressed by interactionSource.collectIsPressedAsState()
     var triggerBurst by remember { mutableStateOf(false) }
 
-    // Premium Squash & Stretch Physics
-    val scaleX by animateFloatAsState(
-        targetValue = if (isPressed) 1.08f else 1f,
-        animationSpec = spring(dampingRatio = 0.45f, stiffness = Spring.StiffnessMediumLow),
-        label = "squashX"
-    )
-    val scaleY by animateFloatAsState(
-        targetValue = if (isPressed) 0.88f else 1f,
-        animationSpec = spring(dampingRatio = 0.45f, stiffness = Spring.StiffnessMediumLow),
-        label = "stretchY"
-    )
-    
-    val pressDepth by animateDpAsState(
-        targetValue = if (isPressed) buttonSize * 0.04f else 0.dp,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessMedium),
-        label = "pressDepth"
+    // The total depth the button sits above the surface (the "side" height)
+    val totalDepth = buttonSize * 0.07f
+
+    // Spring physics: button presses INTO the screen
+    val springSpec = spring<Float>(
+        dampingRatio = 0.5f,       // bouncy on release
+        stiffness = Spring.StiffnessMedium
     )
 
+    // How far the button has sunk (0 = fully raised, 1 = fully pressed in)
+    val pressProgress by animateFloatAsState(
+        targetValue = if (isPressed) 1f else 0f,
+        animationSpec = springSpec,
+        label = "pressProgress"
+    )
+
+    // Derived values from press progress
+    val sinkOffset = totalDepth * pressProgress         // how far down the face moves
+    val remainingDepth = totalDepth * (1f - pressProgress)  // visible side height
+    val elevation = 24.dp * (1f - pressProgress) + 2.dp    // shadow shrinks as pressed
+    val scale = 1f - (pressProgress * 0.03f)                // subtle scale reduction
+
     Box(
-        modifier = modifier
-            .size(buttonSize)
-            .graphicsLayer {
-                this.scaleX = scaleX
-                this.scaleY = scaleY
-            },
+        modifier = modifier.size(buttonSize),
         contentAlignment = Alignment.Center
     ) {
         // Particle Burst Layer
@@ -76,57 +74,67 @@ fun SoundButton(
             onFinish = { triggerBurst = false }
         )
 
-        // 1. External Luminous Glow
+        // Ambient glow underneath
         Box(
             modifier = Modifier
-                .size(buttonSize * 0.85f)
-                .blur(32.dp)
+                .size(buttonSize * 0.8f)
+                .blur(28.dp)
+                .graphicsLayer { alpha = 0.35f - (pressProgress * 0.15f) }
                 .background(
                     brush = Brush.radialGradient(
-                        colors = listOf(Primary.copy(alpha = 0.35f), Color.Transparent),
+                        colors = listOf(Primary.copy(alpha = 0.4f), Color.Transparent)
                     ),
                     shape = CircleShape
                 )
         )
 
-        // 2. Button Side/Depth (3D Base)
+        // 3D Side / Depth (the "wall" visible when button is raised)
+        // This sits at the bottom and gets shorter as the button presses in
         Box(
             modifier = Modifier
-                .size(buttonSize)
-                .offset(y = buttonSize * 0.08f)
+                .size(buttonSize * 0.96f)
+                .offset(y = totalDepth)
                 .clip(CircleShape)
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color(0xFF8B1A1A), Color(0xFF4A0808))
+                        listOf(Color(0xFF7A1616), Color(0xFF3D0505))
                     )
                 )
+                .graphicsLayer { alpha = 1f - (pressProgress * 0.4f) }
         )
 
-        // 3. Main Interactive Surface
+        // Main button face — moves down as pressed
         Box(
             modifier = Modifier
                 .size(buttonSize)
-                .offset(y = pressDepth)
+                .graphicsLayer {
+                    translationY = sinkOffset.toPx()
+                    scaleX = scale
+                    scaleY = scale
+                }
                 .shadow(
-                    elevation = if (isPressed) 4.dp else 24.dp,
+                    elevation = elevation,
                     shape = CircleShape,
                     ambientColor = Color.Black,
-                    spotColor = Primary.copy(alpha = 0.5f)
+                    spotColor = Primary.copy(alpha = 0.4f)
                 )
                 .clip(CircleShape)
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            Color(0xFFFF7E7E), // Peak light
-                            Color(0xFFEF4444), // Main color
-                            Color(0xFF991B1B)  // Depth shade
+                            Color(0xFFFF8A8A), // top highlight
+                            Color(0xFFEF4444), // main red
+                            Color(0xFFC62828)  // bottom shade
                         )
                     )
                 )
                 .border(
-                    width = 2.dp,
+                    width = 1.5.dp,
                     brush = Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = 0.35f), Color.Transparent)
+                        listOf(
+                            Color.White.copy(alpha = 0.30f),
+                            Color.White.copy(alpha = 0.05f)
+                        )
                     ),
                     shape = CircleShape
                 )
@@ -141,32 +149,28 @@ fun SoundButton(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            // 4. Glassy Specular Highlight
+            // Specular highlight — fades when pressed (light changes)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(6.dp)
+                    .padding(4.dp)
                     .clip(CircleShape)
                     .drawBehind {
                         drawOval(
                             brush = Brush.verticalGradient(
-                                colors = listOf(Color.White.copy(alpha = 0.28f), Color.Transparent),
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0.22f * (1f - pressProgress * 0.6f)),
+                                    Color.Transparent
+                                ),
                                 startY = 0f,
-                                endY = size.height * 0.45f
+                                endY = size.height * 0.4f
                             ),
                             size = size
                         )
                     }
             )
 
-            // 5. Bevel Border (Inner Light)
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .border(5.dp, Color.White.copy(alpha = 0.05f), CircleShape)
-            )
-
-            // Content
+            // Text label
             Text(
                 text = sound.name.uppercase(),
                 style = MaterialTheme.typography.displayLarge,
@@ -178,4 +182,3 @@ fun SoundButton(
         }
     }
 }
-
