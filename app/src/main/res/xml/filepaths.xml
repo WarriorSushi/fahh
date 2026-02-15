@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <external-files-path name="fahh_movies" path="Movies/fahh" />
+    <external-media-path name="fahh_videos" path="." />
+    <files-path name="fahh_internal" path="." />
+</paths>
