@@ -222,7 +222,7 @@ fun SidebarMenu(
                 ) {
                     Text(
                         "Privacy & Terms",
-                        color = Color.White.copy(alpha = 0.3f),
+                        color = Color.White.copy(alpha = 0.45f),
                         style = MaterialTheme.typography.labelSmall
                     )
                 }

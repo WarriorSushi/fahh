@@ -35,6 +35,12 @@ class SoundViewModel @Inject constructor(
     val allSounds: StateFlow<List<Sound>> = repository.allSounds
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val walkthroughDone = settingsRepository.walkthroughDoneFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true // default true so walkthrough doesn't flash on existing users
+    )
+
     val isFirstRun = settingsRepository.isFirstRunFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -65,6 +71,12 @@ class SoundViewModel @Inject constructor(
         }
     }
 
+    fun completeWalkthrough() {
+        viewModelScope.launch {
+            settingsRepository.setWalkthroughDone()
+        }
+    }
+
     fun completeOnboarding() {
         viewModelScope.launch {
             settingsRepository.setOnboardingCompleted()
@@ -89,6 +101,15 @@ class SoundViewModel @Inject constructor(
         viewModelScope.launch {
             repository.unlockSound(soundName)
         }
+    }
+
+    /**
+     * Increments recording count and returns whether an ad should be shown.
+     * Ads start after 5th recording, then every 3rd recording (6, 9, 12, 15...).
+     */
+    suspend fun onRecordingFinished(): Boolean {
+        val count = settingsRepository.incrementRecordingCount()
+        return count > 5 && (count - 6) % 3 == 0
     }
 
     override fun onCleared() {

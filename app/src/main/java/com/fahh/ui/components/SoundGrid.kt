@@ -153,16 +153,16 @@ private fun SoundTile(
                 Surface(
                     shape = RoundedCornerShape(5.dp),
                     color = when {
-                        sound.isLocked -> Color.White.copy(alpha = 0.06f)
+                        sound.isLocked -> Color(0xFFFF6B00).copy(alpha = 0.15f)
                         isSelected -> Primary.copy(alpha = 0.2f)
                         else -> Primary.copy(alpha = 0.1f)
                     }
                 ) {
                     Text(
-                        text = if (sound.isLocked) "LOCKED" else if (isSelected) "ACTIVE" else "READY",
+                        text = if (sound.isLocked) "WATCH 1 AD TO UNLOCK" else if (isSelected) "ACTIVE" else "READY",
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (sound.isLocked) Color.White.copy(alpha = 0.35f) else Primary,
-                        fontSize = 8.sp,
+                        color = if (sound.isLocked) Color(0xFFFF9D42) else Primary,
+                        fontSize = 7.sp,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 0.5.sp,
                         modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
@@ -180,7 +180,7 @@ private fun SoundTile(
                     Text(
                         text = sound.packName.uppercase(),
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.3f),
+                        color = Color.White.copy(alpha = 0.45f),
                         fontSize = 9.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

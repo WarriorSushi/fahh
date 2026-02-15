@@ -123,7 +123,7 @@ fun TrimScreen(
                         modifier = Modifier.size(64.dp).premiumGlass(CircleShape, alpha = 0.1f)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+                            Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = Color.White, modifier = Modifier.size(32.dp))
                         }
                     }
                 }
@@ -236,7 +236,7 @@ fun TrimScreen(
                 if (isSaving) {
                     CircularProgressIndicator(strokeWidth = 3.dp, color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Icon(Icons.Default.ContentCut, contentDescription = null)
+                    Icon(Icons.Default.ContentCut, contentDescription = "Trim")
                     Spacer(modifier = Modifier.width(12.dp))
                     Text("Finish Trimming", fontWeight = FontWeight.Black, style = MaterialTheme.typography.titleMedium)
                 }

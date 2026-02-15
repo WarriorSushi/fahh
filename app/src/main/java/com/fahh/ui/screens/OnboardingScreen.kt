@@ -228,7 +228,7 @@ private fun FunStepCard(step: OnboardingStep) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = step.icon,
-                        contentDescription = null,
+                        contentDescription = step.title,
                         tint = step.accent,
                         modifier = Modifier.size(56.dp)
                     )

@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.fahh"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.fahh"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -22,13 +22,25 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("FAHH_KEYSTORE_PATH") ?: "fahh-release.jks"
+            storeFile = file(keystorePath)
+            storePassword = System.getenv("FAHH_KEYSTORE_PASSWORD") ?: ""
+            keyAlias = System.getenv("FAHH_KEY_ALIAS") ?: "fahh"
+            keyPassword = System.getenv("FAHH_KEY_PASSWORD") ?: ""
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {

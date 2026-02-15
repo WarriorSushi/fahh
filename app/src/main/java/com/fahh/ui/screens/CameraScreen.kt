@@ -323,7 +323,7 @@ fun CameraScreen(
 private fun PermissionRequiredContent(onGrantClick: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
-            Icon(imageVector = Icons.Default.Videocam, contentDescription = null, tint = Primary, modifier = Modifier.size(64.dp))
+            Icon(imageVector = Icons.Default.Videocam, contentDescription = "Camera", tint = Primary, modifier = Modifier.size(64.dp))
             Spacer(modifier = Modifier.height(24.dp))
             Text("Camera Access Required", style = MaterialTheme.typography.headlineSmall, color = Color.White, textAlign = TextAlign.Center)
             Spacer(modifier = Modifier.height(12.dp))

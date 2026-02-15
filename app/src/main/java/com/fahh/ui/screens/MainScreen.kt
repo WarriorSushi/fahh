@@ -9,8 +9,14 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,6 +66,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -107,6 +114,16 @@ fun MainScreen(
 
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
+
+    val walkthroughDone by viewModel.walkthroughDone.collectAsState()
+    // Walkthrough steps: 0 = "press the button", 1 = "feels good" meme, 2 = "more sounds →", -1 = done
+    var walkthroughStep by remember { mutableStateOf(-1) }
+
+    LaunchedEffect(walkthroughDone) {
+        if (!walkthroughDone) {
+            walkthroughStep = 0
+        }
+    }
 
     var soundToUnlock by remember { mutableStateOf<Sound?>(null) }
     var showConfetti by remember { mutableStateOf(false) }
@@ -275,9 +292,18 @@ fun MainScreen(
                     onPlayClick = {
                         clearSidebarNotice()
                         viewModel.playSelectedSound()
+                        if (walkthroughStep == 0) walkthroughStep = 1
                     },
                     onCameraClick = onCameraClick,
-                    onMenuClick = { scope.launch { drawerState.open() } }
+                    onMenuClick = { scope.launch { drawerState.open() } },
+                    walkthroughStep = walkthroughStep,
+                    onWalkthroughAdvance = {
+                        walkthroughStep++
+                        if (walkthroughStep > 2) {
+                            walkthroughStep = -1
+                            viewModel.completeWalkthrough()
+                        }
+                    }
                 )
             }
         }
@@ -290,7 +316,9 @@ private fun MainContent(
     selectedSound: Sound,
     onPlayClick: () -> Unit,
     onCameraClick: () -> Unit,
-    onMenuClick: () -> Unit
+    onMenuClick: () -> Unit,
+    walkthroughStep: Int = -1,
+    onWalkthroughAdvance: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -311,12 +339,6 @@ private fun MainContent(
                 )
         )
 
-        // Tiny swipe hint on right edge
-        SwipeEdgeTab(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-        )
-
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
@@ -325,7 +347,7 @@ private fun MainContent(
                         Image(
                             painter = painterResource(id = R.drawable.fahh_logo_wide),
                             contentDescription = "Fahh",
-                            modifier = Modifier.height(36.dp)
+                            modifier = Modifier.height(44.dp)
                         )
                     },
                     actions = {
@@ -385,7 +407,7 @@ private fun MainContent(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Videocam,
-                            contentDescription = null,
+                            contentDescription = "Camera",
                             tint = Color.White
                         )
                         Spacer(modifier = Modifier.width(12.dp))
@@ -401,15 +423,144 @@ private fun MainContent(
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
+
+        // Swipe hint on right edge — tappable to open sidebar (must be after Scaffold to receive taps)
+        SwipeEdgeTab(
+            onClick = onMenuClick,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 140.dp)
+        )
+
+        // ═══ WALKTHROUGH OVERLAYS ═══
+
+        // Step 0 — "Press the button" prompt with pointer
+        AnimatedVisibility(
+            visible = walkthroughStep == 0,
+            enter = fadeIn(tween(500)) + slideInVertically(tween(500)) { it / 3 },
+            exit = fadeOut(tween(300)),
+            modifier = Modifier.align(Alignment.Center).offset(y = (-180).dp)
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                WalkthroughBubble(
+                    text = "that big red button.\nit needs to be pressed.\ngo on. press it."
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                // Pointer arrow down to button
+                Text(
+                    text = "▼",
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 20.sp
+                )
+            }
+        }
+
+        // Step 1 — "Feels good" meme after first press
+        AnimatedVisibility(
+            visible = walkthroughStep == 1,
+            enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { it / 2 },
+            exit = fadeOut(tween(500)) + slideOutVertically(tween(500)) { -it / 3 },
+            modifier = Modifier.align(Alignment.Center).offset(y = (-160).dp)
+        ) {
+            LaunchedEffect(Unit) {
+                delay(3000)
+                onWalkthroughAdvance()
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White.copy(alpha = 0.18f),
+                    shadowElevation = 0.dp,
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp, Color.White.copy(alpha = 0.35f)
+                    ),
+                    modifier = Modifier.padding(horizontal = 48.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(20.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.feels_good),
+                            contentDescription = "feels good",
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "admit it.\nthat felt amazing.",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            lineHeight = 24.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "do it again. we won't judge.",
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 13.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
+
+        // Step 2 — Sidebar hint
+        AnimatedVisibility(
+            visible = walkthroughStep == 2,
+            enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { it / 2 },
+            exit = fadeOut(tween(400)),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 36.dp, bottom = 160.dp)
+        ) {
+            LaunchedEffect(Unit) {
+                delay(3500)
+                onWalkthroughAdvance()
+            }
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White.copy(alpha = 0.12f),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp, Color.White.copy(alpha = 0.2f)
+                ),
+                shadowElevation = 0.dp
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = "psst… more sounds",
+                            color = Color.White,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "hiding over there →",
+                            color = Primary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("👉", fontSize = 22.sp)
+                }
+            }
+        }
     }
 }
 
 @Composable
-private fun SwipeEdgeTab(modifier: Modifier = Modifier) {
+private fun SwipeEdgeTab(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "edgeTab")
     val nudge by transition.animateFloat(
         initialValue = 0f,
-        targetValue = -3f,
+        targetValue = -4f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1200),
             repeatMode = RepeatMode.Reverse
@@ -418,21 +569,57 @@ private fun SwipeEdgeTab(modifier: Modifier = Modifier) {
     )
 
     Surface(
-        shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp),
-        color = Color.White.copy(alpha = 0.08f),
+        onClick = onClick,
+        shape = RoundedCornerShape(topStart = 14.dp, bottomStart = 14.dp),
+        color = Primary.copy(alpha = 0.35f),
         modifier = modifier
             .offset(x = nudge.dp)
-            .width(16.dp)
-            .height(48.dp)
     ) {
-        Box(contentAlignment = Alignment.Center) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp)
+        ) {
             Icon(
                 imageVector = Icons.Default.ChevronLeft,
-                contentDescription = "Swipe for sounds",
-                tint = Color.White.copy(alpha = 0.4f),
-                modifier = Modifier.size(14.dp)
+                contentDescription = "Open sounds",
+                tint = Color.White.copy(alpha = 0.9f),
+                modifier = Modifier.size(18.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun WalkthroughBubble(text: String) {
+    val transition = rememberInfiniteTransition(label = "bubble")
+    val floatY by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = -6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "float"
+    )
+
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White.copy(alpha = 0.18f),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, Color.White.copy(alpha = 0.35f)
+        ),
+        shadowElevation = 0.dp,
+        modifier = Modifier.offset(y = floatY.dp)
+    ) {
+        Text(
+            text = text,
+            color = Color.White,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            lineHeight = 24.sp,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+        )
     }
 }
 

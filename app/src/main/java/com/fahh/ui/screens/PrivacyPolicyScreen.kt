@@ -1,5 +1,6 @@
 package com.fahh.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -21,6 +22,7 @@ import com.fahh.ui.theme.premiumGlass
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrivacyPolicyScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
     Scaffold(
         containerColor = Background,
         topBar = {
@@ -59,19 +61,27 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
 
             PrivacySection(
                 title = "Data Collection",
-                content = "We do not collect any personal data. All videos and settings are stored locally on your device."
+                content = "Fahh does not collect, store, or transmit any personal data. All your videos, sound preferences, and settings stay on your device. We have zero servers — your data is yours."
             )
             PrivacySection(
                 title = "Permissions",
-                content = "Fahh requires Camera and Microphone access only to record videos with sound effects."
+                content = "Camera & Microphone: Used only during recording to capture video with sound effects. Storage: Used to save recorded videos to your gallery. No data is uploaded anywhere."
             )
             PrivacySection(
                 title = "Advertisements",
-                content = "We use Google AdMob for advertisements. AdMob may collect and use pseudonymous data for ad personalization."
+                content = "We use Google AdMob to show occasional ads that help keep the app free. AdMob may collect device identifiers and usage data for ad personalization. You can opt out of personalized ads in your device settings."
             )
             PrivacySection(
-                title = "Third-Party Links",
-                content = "Our app may contain links to social media (TikTok, Instagram) for video sharing."
+                title = "Sound Unlocks",
+                content = "Watching a rewarded ad unlocks sounds permanently on your device. This preference is stored locally and never shared."
+            )
+            PrivacySection(
+                title = "Children's Privacy",
+                content = "Fahh is not directed at children under 13. We do not knowingly collect data from children."
+            )
+            PrivacySection(
+                title = "Contact",
+                content = "Questions? Reach us at the privacy policy page:\nhttps://tracker.dog/fahh-privay-policy/"
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -79,7 +89,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
             Text(
                 text = "Last updated: Feb 2026",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.3f),
+                color = Color.White.copy(alpha = 0.45f),
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
 

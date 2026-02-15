@@ -17,6 +17,7 @@ import com.fahh.utils.ShareUtils
 import com.fahh.viewmodel.SoundViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -56,6 +57,10 @@ class MainActivity : ComponentActivity() {
                             initialState == "camera" && targetState == "main" -> {
                                 (fadeIn(animationSpec = tween(400)) + scaleIn(initialScale = 1.15f))
                                     .togetherWith(fadeOut(animationSpec = tween(400)) + scaleOut(targetScale = 0.9f))
+                            }
+                            targetState == "ad_transition" -> {
+                                fadeIn(animationSpec = tween(400))
+                                    .togetherWith(fadeOut(animationSpec = tween(400)))
                             }
                             targetState == "share" || targetState == "trim" || targetState == "onboarding" -> {
                                 slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(450))
@@ -99,9 +104,16 @@ class MainActivity : ComponentActivity() {
                             onVideoSaved = { file ->
                                 lastVideoFile = file
                                 previousScreen = "camera"
-                                currentScreen = "share"
+                                kotlinx.coroutines.MainScope().launch {
+                                    val shouldShowAd = soundViewModel.onRecordingFinished()
+                                    currentScreen = if (shouldShowAd) "ad_transition" else "share"
+                                }
                             },
                             soundViewModel = soundViewModel
+                        )
+
+                        "ad_transition" -> AdTransitionScreen(
+                            onFinished = { currentScreen = "share" }
                         )
 
                         "share" -> {

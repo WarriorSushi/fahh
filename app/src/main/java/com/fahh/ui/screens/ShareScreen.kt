@@ -130,7 +130,7 @@ fun ShareScreen(
                     shape = RoundedCornerShape(20.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Primary)
                 ) {
-                    Icon(imageVector = Icons.Default.Share, contentDescription = null)
+                    Icon(imageVector = Icons.Default.Share, contentDescription = "Share")
                     Spacer(modifier = Modifier.width(12.dp))
                     Text("Share to Socials", fontWeight = FontWeight.Black, style = MaterialTheme.typography.titleMedium)
                 }
@@ -148,7 +148,7 @@ fun ShareScreen(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(imageVector = Icons.Default.ContentCut, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White)
+                                Icon(imageVector = Icons.Default.ContentCut, contentDescription = "Trim", modifier = Modifier.size(16.dp), tint = Color.White)
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text("Trim", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.White)
                             }
@@ -163,7 +163,7 @@ fun ShareScreen(
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 14.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFF10B981))
+                                Icon(imageVector = Icons.Default.Check, contentDescription = "Saved", modifier = Modifier.size(14.dp), tint = Color(0xFF10B981))
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text("Saved", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF10B981))
                             }
@@ -179,7 +179,7 @@ fun ShareScreen(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(imageVector = Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Red.copy(alpha = 0.8f))
+                                Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp), tint = Color.Red.copy(alpha = 0.8f))
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text("Delete", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.Red.copy(alpha = 0.8f))
                             }
