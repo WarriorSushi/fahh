@@ -1,6 +1,10 @@
-# Fahh
+<p align="center">
+  <img src="assets/logo.png" width="120" alt="Fahh logo" />
+</p>
 
-**The meme sound reaction camera.**
+<h1 align="center">Fahh</h1>
+
+<p align="center"><b>The meme sound reaction camera.</b></p>
 
 Press a big red button. A meme sound blasts through your speaker. Your camera is already rolling. Your friend's face is priceless. Share it everywhere.
 
