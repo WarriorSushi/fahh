@@ -5,6 +5,8 @@
 **Current app version in source:** `1.0.6` (`versionCode 7`)
 **Purpose:** Give a lower-cost implementation model enough product, technical, policy, and release context to execute the next updates without redoing discovery.
 
+> **Product decision update, July 10, 2026:** Fahh 1.1.0 will not sell a subscription, lifetime unlock, or any paid feature. The complete experience remains financially free. Rewarded ads may unlock optional convenience features such as My Sounds, but users will always have a free path to the core app, recording, editing, sharing, and sound library. Revisit paid products only after retention and user feedback demonstrate that they would add real value.
+
 ## 1. Executive recommendation
 
 Fahh should remain a generous free reaction camera and add a clear convenience upgrade, not become an ad-heavy soundboard.

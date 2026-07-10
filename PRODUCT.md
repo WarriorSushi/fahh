@@ -30,7 +30,7 @@ Playful, physical, generous. The voice is self-aware, warm, concise, and a littl
 1. The laugh is one tap away. Preserve instant sound playback and keep the main red button as the hero.
 2. Monetization follows delight. Let users experience value before showing an unlock or purchase choice.
 3. Free stays genuinely useful. Core playback, camera, editing, sharing, and a useful set of sounds remain available without payment or an account.
-4. Premium means convenience and abundance. Paid value comes from the complete catalog, future drops, creator tools, and freedom from ad-watching.
+4. Free means complete. Core playback, recording, editing, sharing, and sound discovery must remain financially accessible; optional rewarded unlocks may add convenience without requiring payment.
 5. Privacy and trust are product features. Keep video and custom audio local by default, ask only for necessary permissions, and explain any data collection plainly.
 6. Earned familiarity beats novelty. Use standard Android navigation, billing, search, filtering, and accessibility patterns; reserve personality for copy, sound, physical feedback, and celebrations.
 
