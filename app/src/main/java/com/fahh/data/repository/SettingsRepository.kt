@@ -39,6 +39,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val LAST_ACTIVE_DATE = stringPreferencesKey("last_active_date")
         val TOTAL_FAHH_COUNT = intPreferencesKey("total_fahh_count")
         val HIGHEST_COMBO_TIER = intPreferencesKey("highest_combo_tier")
+        val MY_SOUNDS_UNLOCKED = androidx.datastore.preferences.core.booleanPreferencesKey("my_sounds_unlocked")
     }
 
     val volumeFlow: Flow<Float> = context.dataStore.data.map { preferences ->
@@ -164,6 +165,16 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             } else {
                 preferences[PreferencesKeys.SELECTED_SOUND_ID] = soundId
             }
+        }
+    }
+
+    val mySoundsUnlockedFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.MY_SOUNDS_UNLOCKED] ?: false
+    }
+
+    suspend fun unlockMySounds() {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.MY_SOUNDS_UNLOCKED] = true
         }
     }
 

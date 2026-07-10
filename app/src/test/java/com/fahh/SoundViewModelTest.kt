@@ -4,7 +4,9 @@ import android.app.Application
 import com.fahh.data.model.Sound
 import com.fahh.data.repository.SettingsRepository
 import com.fahh.data.repository.SoundRepository
+import com.fahh.data.repository.CustomSoundRepository
 import com.fahh.audio.SoundManager
+import com.fahh.audio.CustomSoundRecorder
 import com.fahh.viewmodel.SoundViewModel
 import io.mockk.every
 import io.mockk.mockk
@@ -27,6 +29,8 @@ class SoundViewModelTest {
     private val soundRepository = mockk<SoundRepository>(relaxed = true)
     private val soundManager = mockk<SoundManager>(relaxed = true)
     private val settingsRepository = mockk<SettingsRepository>(relaxed = true)
+    private val customSoundRepository = mockk<CustomSoundRepository>(relaxed = true)
+    private val customSoundRecorder = mockk<CustomSoundRecorder>(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
@@ -42,12 +46,16 @@ class SoundViewModelTest {
         every { settingsRepository.isFirstRunFlow } returns flowOf(false)
         every { settingsRepository.favoriteSoundFlow } returns flowOf(null)
         every { settingsRepository.selectedSoundIdFlow } returns flowOf(null)
+        every { settingsRepository.mySoundsUnlockedFlow } returns flowOf(false)
+        every { customSoundRepository.sounds } returns kotlinx.coroutines.flow.MutableStateFlow(emptyList())
 
         viewModel = SoundViewModel(
             application,
             soundRepository,
             soundManager,
-            settingsRepository
+            settingsRepository,
+            customSoundRepository,
+            customSoundRecorder
         )
     }
 

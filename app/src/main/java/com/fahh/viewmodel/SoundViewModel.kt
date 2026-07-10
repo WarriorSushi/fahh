@@ -4,16 +4,19 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.fahh.audio.SoundManager
+import com.fahh.audio.CustomSoundRecorder
 import com.fahh.data.catalog.SoundCatalog
 import com.fahh.data.model.Sound
 import com.fahh.data.repository.SettingsRepository
 import com.fahh.data.repository.SoundRepository
+import com.fahh.data.repository.CustomSoundRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -23,7 +26,9 @@ class SoundViewModel @Inject constructor(
     application: Application,
     private val repository: SoundRepository,
     private val soundManager: SoundManager,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val customSoundRepository: CustomSoundRepository,
+    private val customSoundRecorder: CustomSoundRecorder
 ) : AndroidViewModel(application) {
 
     val volume = settingsRepository.volumeFlow.stateIn(
@@ -32,7 +37,9 @@ class SoundViewModel @Inject constructor(
         initialValue = 1.0f
     )
 
-    val allSounds: StateFlow<List<Sound>> = repository.allSounds
+    val allSounds: StateFlow<List<Sound>> = combine(repository.allSounds, customSoundRepository.sounds) { catalog, custom ->
+        catalog + custom
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val walkthroughDone = settingsRepository.walkthroughDoneFlow.stateIn(
@@ -71,6 +78,12 @@ class SoundViewModel @Inject constructor(
         initialValue = false
     )
 
+    val mySoundsUnlocked = settingsRepository.mySoundsUnlockedFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
     /** Reads the actual DataStore value (not the stateIn initial). */
     suspend fun isFirstRunResolved(): Boolean = settingsRepository.isFirstRunFlow.first()
 
@@ -80,6 +93,8 @@ class SoundViewModel @Inject constructor(
     /** Emits true when a rating prompt should be shown */
     private val _showRatingPrompt = MutableStateFlow(false)
     val showRatingPrompt: StateFlow<Boolean> = _showRatingPrompt.asStateFlow()
+    private val _isCustomRecording = MutableStateFlow(false)
+    val isCustomRecording: StateFlow<Boolean> = _isCustomRecording.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -146,7 +161,7 @@ class SoundViewModel @Inject constructor(
     }
 
     fun playSelectedSound() {
-        soundManager.playSound(_selectedSound.value.resId, volume.value)
+        soundManager.playSound(_selectedSound.value, volume.value)
         viewModelScope.launch {
             settingsRepository.incrementTotalFahhCount()
             checkSoundPlayMilestone()
@@ -154,7 +169,40 @@ class SoundViewModel @Inject constructor(
     }
 
     fun playSoundPreview(sound: Sound) {
-        soundManager.playSound(sound.resId, volume.value)
+        soundManager.playSound(sound, volume.value)
+    }
+
+    fun startCustomSoundRecording(): Result<Unit> = runCatching {
+        customSoundRecorder.start()
+        _isCustomRecording.value = true
+    }
+
+    fun stopCustomSoundRecording(name: String): Result<Sound> = runCatching {
+        check(mySoundsUnlocked.value) { "Unlock My Sounds first." }
+        check(customSoundRepository.sounds.value.size < FREE_CUSTOM_SOUND_LIMIT) {
+            "Free My Sounds is full. Delete one to record another."
+        }
+        val file = customSoundRecorder.stop()
+        _isCustomRecording.value = false
+        customSoundRepository.save(name, file)
+    }.onFailure {
+        _isCustomRecording.value = false
+    }
+
+    fun cancelCustomSoundRecording() {
+        customSoundRecorder.cancel()
+        _isCustomRecording.value = false
+    }
+
+    fun unlockMySounds() {
+        viewModelScope.launch { settingsRepository.unlockMySounds() }
+    }
+
+    fun deleteCustomSound(soundId: String) {
+        customSoundRepository.delete(soundId)
+        if (_selectedSound.value.id == soundId) {
+            _selectedSound.value = SoundCatalog.defaultSelectedSound
+        }
     }
 
     fun unlockPack(packName: String) {
@@ -212,6 +260,10 @@ class SoundViewModel @Inject constructor(
     fun onRatingDismissed() {
         _showRatingPrompt.value = false
         viewModelScope.launch { settingsRepository.incrementRatingDismissCount() }
+    }
+
+    companion object {
+        const val FREE_CUSTOM_SOUND_LIMIT = 5
     }
 
     override fun onCleared() {
