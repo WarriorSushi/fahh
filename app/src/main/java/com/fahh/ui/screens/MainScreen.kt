@@ -238,7 +238,7 @@ fun MainScreen(
                             activity = activity,
                             rewardedAd = ad,
                             onRewardEarned = {
-                                viewModel.unlockSound(sound.name)
+                                viewModel.unlockSound(sound.id)
                                 viewModel.selectSound(sound.copy(isLocked = false))
                                 showConfetti = true
                                 clearSidebarNotice()

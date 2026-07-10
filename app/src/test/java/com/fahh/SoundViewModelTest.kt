@@ -41,6 +41,7 @@ class SoundViewModelTest {
         every { settingsRepository.highestComboTierFlow } returns flowOf(0)
         every { settingsRepository.isFirstRunFlow } returns flowOf(false)
         every { settingsRepository.favoriteSoundFlow } returns flowOf(null)
+        every { settingsRepository.selectedSoundIdFlow } returns flowOf(null)
 
         viewModel = SoundViewModel(
             application,

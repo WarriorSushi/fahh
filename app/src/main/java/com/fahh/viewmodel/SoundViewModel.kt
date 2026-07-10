@@ -3,8 +3,8 @@
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.fahh.R
 import com.fahh.audio.SoundManager
+import com.fahh.data.catalog.SoundCatalog
 import com.fahh.data.model.Sound
 import com.fahh.data.repository.SettingsRepository
 import com.fahh.data.repository.SoundRepository
@@ -74,7 +74,7 @@ class SoundViewModel @Inject constructor(
     /** Reads the actual DataStore value (not the stateIn initial). */
     suspend fun isFirstRunResolved(): Boolean = settingsRepository.isFirstRunFlow.first()
 
-    private val _selectedSound = MutableStateFlow(Sound("Fahh", R.raw.fahh, "F"))
+    private val _selectedSound = MutableStateFlow(SoundCatalog.defaultSelectedSound)
     val selectedSound: StateFlow<Sound> = _selectedSound.asStateFlow()
 
     /** Emits true when a rating prompt should be shown */
@@ -84,21 +84,22 @@ class SoundViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             settingsRepository.recordDailyActivity()
-            val existing = repository.allSounds.first()
-            if (existing.isEmpty()) {
-                repository.insertAll(defaultSounds())
-            } else {
-                // Rename for existing users who have the old name
-                repository.renameSound("Romance Sax", "Romantic")
-            }
-            // Auto-select last used sound on launch
+            repository.syncCatalog(SoundCatalog.sounds)
+
+            // Prefer the stable selected ID, then fall back to the legacy name preference.
+            val lastSoundId = settingsRepository.selectedSoundIdFlow.first()
             val lastName = settingsRepository.favoriteSoundFlow.first()
-            if (lastName != null) {
-                val sounds = repository.allSounds.first()
-                val lastSound = sounds.find { it.name == lastName && !it.isLocked }
-                if (lastSound != null) {
-                    _selectedSound.value = lastSound
-                }
+            val legacySoundId = when (lastName) {
+                "Romance Sax" -> "romantic"
+                else -> null
+            }
+            val sounds = repository.allSounds.first()
+            val lastSound = sounds.find { it.id == lastSoundId && !it.isLocked }
+                ?: sounds.find { it.id == legacySoundId && !it.isLocked }
+                ?: sounds.find { it.name == lastName && !it.isLocked }
+            if (lastSound != null) {
+                _selectedSound.value = lastSound
+                settingsRepository.setSelectedSoundId(lastSound.id)
             }
         }
     }
@@ -115,6 +116,7 @@ class SoundViewModel @Inject constructor(
             // Persist last selected sound so app opens with it
             viewModelScope.launch {
                 settingsRepository.setFavoriteSound(sound.name)
+                settingsRepository.setSelectedSoundId(sound.id)
             }
         }
     }
@@ -161,9 +163,9 @@ class SoundViewModel @Inject constructor(
         }
     }
 
-    fun unlockSound(soundName: String) {
+    fun unlockSound(soundId: String) {
         viewModelScope.launch {
-            repository.unlockSound(soundName)
+            repository.unlockSound(soundId)
             checkUnlockMilestone()
         }
     }
@@ -225,18 +227,4 @@ class SoundViewModel @Inject constructor(
         super.onCleared()
     }
 
-    private fun defaultSounds(): List<Sound> = listOf(
-        Sound("Fahh", R.raw.fahh, "F", isLocked = false, packName = "Free"),
-        Sound("Bruh", R.raw.bruh, "B", isLocked = false, packName = "Free"),
-        Sound("Vine Boom", R.raw.vine_boom, "V", isLocked = false, packName = "Free"),
-        Sound("Wow", R.raw.wow, "W", isLocked = false, packName = "Free"),
-        Sound("Air Horn", R.raw.air_horn, "A", isLocked = true, packName = "Chaos"),
-        Sound("Dun Dunnn", R.raw.dun_dun_dunn, "D", isLocked = true, packName = "Reaction"),
-        Sound("Oh My God", R.raw.oh_my_god_wow, "O", isLocked = true, packName = "Reaction"),
-        Sound("Directed By", R.raw.directed_by, "R", isLocked = true, packName = "Classic"),
-        Sound("Sudden Suspense", R.raw.sudden_suspense, "S", isLocked = true, packName = "Reaction"),
-        Sound("Yoooo Japan", R.raw.yoooooo_japan, "Y", isLocked = true, packName = "Chaos"),
-        Sound("Gop Gop Gop", R.raw.gop_gop_gop, "G", isLocked = true, packName = "Chaos"),
-        Sound("Romantic", R.raw.romance_saxophone, "X", isLocked = true, packName = "Classic")
-    )
 }

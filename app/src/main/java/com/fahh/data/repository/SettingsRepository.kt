@@ -33,6 +33,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val HAS_RATED = androidx.datastore.preferences.core.booleanPreferencesKey("has_rated")
         val RATING_DISMISS_COUNT = intPreferencesKey("rating_dismiss_count")
         val FAVORITE_SOUND = stringPreferencesKey("favorite_sound")
+        val SELECTED_SOUND_ID = stringPreferencesKey("selected_sound_id")
         val WATERMARK_ENABLED = androidx.datastore.preferences.core.booleanPreferencesKey("watermark_enabled")
         val STREAK_COUNT = intPreferencesKey("streak_count")
         val LAST_ACTIVE_DATE = stringPreferencesKey("last_active_date")
@@ -148,6 +149,20 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
                 preferences.remove(PreferencesKeys.FAVORITE_SOUND)
             } else {
                 preferences[PreferencesKeys.FAVORITE_SOUND] = name
+            }
+        }
+    }
+
+    val selectedSoundIdFlow: Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.SELECTED_SOUND_ID]
+    }
+
+    suspend fun setSelectedSoundId(soundId: String?) {
+        context.dataStore.edit { preferences ->
+            if (soundId == null) {
+                preferences.remove(PreferencesKeys.SELECTED_SOUND_ID)
+            } else {
+                preferences[PreferencesKeys.SELECTED_SOUND_ID] = soundId
             }
         }
     }
