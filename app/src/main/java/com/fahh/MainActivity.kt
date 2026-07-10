@@ -24,7 +24,6 @@ import com.fahh.viewmodel.SoundViewModel
 import com.google.android.play.core.review.ReviewManagerFactory
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -53,8 +52,6 @@ class MainActivity : ComponentActivity() {
             FahhTheme {
                 val soundViewModel: SoundViewModel = hiltViewModel()
                 val navController = rememberNavController()
-                val scope = rememberCoroutineScope()
-
                 var lastVideoFile by remember { mutableStateOf<File?>(null) }
                 val showRatingPrompt by soundViewModel.showRatingPrompt.collectAsState()
 
@@ -181,32 +178,10 @@ class MainActivity : ComponentActivity() {
                             onBack = { navController.popBackStack() },
                             onVideoSaved = { file ->
                                 lastVideoFile = file
-                                scope.launch {
-                                    val shouldShowAd = soundViewModel.onRecordingFinished()
-                                    if (shouldShowAd) {
-                                        navController.navigate(Screen.AdTransition.route)
-                                    } else {
-                                        navController.navigate(Screen.Share.route)
-                                    }
-                                }
+                                soundViewModel.onRecordingFinished()
+                                navController.navigate(Screen.Share.route)
                             },
                             soundViewModel = soundViewModel
-                        )
-                    }
-
-                    composable(
-                        Screen.AdTransition.route,
-                        enterTransition = { fadeIn(tween(400)) },
-                        exitTransition = { fadeOut(tween(400)) },
-                        popEnterTransition = { fadeIn(tween(400)) },
-                        popExitTransition = { fadeOut(tween(400)) }
-                    ) {
-                        AdTransitionScreen(
-                            onFinished = {
-                                navController.navigate(Screen.Share.route) {
-                                    popUpTo(Screen.AdTransition.route) { inclusive = true }
-                                }
-                            }
                         )
                     }
 

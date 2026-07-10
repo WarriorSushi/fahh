@@ -170,19 +170,10 @@ class SoundViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Increments recording count and returns whether an ad should be shown.
-     * Recordings 6–11: every 3rd (6, 9)
-     * Recordings 12–19: every 2nd (12, 14, 16, 18)
-     * Recordings 20+: every recording
-     */
-    suspend fun onRecordingFinished(): Boolean {
-        val count = settingsRepository.incrementRecordingCount()
-        return when {
-            count >= 20 -> true
-            count >= 12 -> count % 2 == 0
-            count >= 6 -> (count - 6) % 3 == 0
-            else -> false
+    /** Records product usage without interrupting the saved-video review flow. */
+    fun onRecordingFinished() {
+        viewModelScope.launch {
+            settingsRepository.incrementRecordingCount()
         }
     }
 
