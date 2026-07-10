@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Info
@@ -18,6 +19,10 @@ import androidx.compose.material.icons.filled.VolumeDown
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -45,10 +50,11 @@ fun SidebarMenu(
     onTipJarClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    var fullLibraryOpen by rememberSaveable { mutableStateOf(false) }
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .width(340.dp)
+            .width(352.dp)
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
@@ -65,7 +71,7 @@ fun SidebarMenu(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 12.dp, top = 20.dp, bottom = 8.dp)
+                    .padding(start = 18.dp, end = 8.dp, top = 10.dp, bottom = 4.dp)
             ) {
                 Surface(
                     color = Primary.copy(alpha = 0.15f),
@@ -75,21 +81,26 @@ fun SidebarMenu(
                         imageVector = Icons.Default.Tune,
                         contentDescription = null,
                         tint = Primary,
-                        modifier = Modifier.padding(8.dp).size(20.dp)
+                        modifier = Modifier.padding(6.dp).size(18.dp)
                     )
                 }
-                Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                Column(modifier = Modifier.weight(1f).padding(start = 9.dp)) {
                     Text(
-                        text = "Sound Library",
-                        style = MaterialTheme.typography.titleLarge,
+                        text = if (fullLibraryOpen) "All sounds" else "Sounds",
+                        style = MaterialTheme.typography.titleMedium,
                         color = Color.White,
                         fontWeight = FontWeight.Black
                     )
                     Text(
-                        text = "Discover and select meme sounds",
+                        text = if (fullLibraryOpen) "Keep browsing, unlock when ready" else "Pick one, then hit Fahh",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.4f)
                     )
+                }
+                if (fullLibraryOpen) {
+                    IconButton(onClick = { fullLibraryOpen = false }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back to quick sounds", tint = Color.White.copy(alpha = 0.65f))
+                    }
                 }
                 IconButton(onClick = onClose) {
                     Icon(
@@ -161,13 +172,40 @@ fun SidebarMenu(
                 selectedSound = selectedSound,
                 onSoundPreview = onSoundPreview,
                 onSoundSelected = onSoundSelected,
+                onMoreSoundsClick = if (fullLibraryOpen) null else ({ fullLibraryOpen = true }),
                 modifier = Modifier.weight(1f)
             )
 
             Divider(color = Color.White.copy(alpha = 0.06f))
 
-            // Volume control
-            Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 14.dp)) {
+            // Utility dock intentionally separates settings from sound discovery.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF121A26))
+                    .padding(horizontal = 18.dp, vertical = 12.dp)
+            ) {
+                Surface(
+                    onClick = onMySoundsClick,
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color(0xFF202C3C),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp)
+                    ) {
+                        Text(text = "\uD83C\uDFA4", fontSize = 18.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Custom sounds", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text("Record and keep your own", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp)
+                        }
+                        Text("→", color = Primary, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Master Volume",
@@ -218,28 +256,6 @@ fun SidebarMenu(
                         tint = Color.White.copy(alpha = 0.7f),
                         modifier = Modifier.size(18.dp)
                     )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Surface(
-                    onClick = onMySoundsClick,
-                    shape = RoundedCornerShape(16.dp),
-                    color = Primary.copy(alpha = 0.12f),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 13.dp)
-                    ) {
-                        Text(text = "\uD83C\uDFA4", fontSize = 18.sp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("My Sounds", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text("Record your own reactions", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp)
-                        }
-                        Text("→", color = Primary, fontWeight = FontWeight.Bold)
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

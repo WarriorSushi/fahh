@@ -44,7 +44,7 @@ private const val ProductionRewardedAdUnitId = "ca-app-pub-1006057089920582/1635
 fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
     val context = LocalContext.current
     val activity = context.findActivity()
-    val unlocked by soundViewModel.mySoundsUnlocked.collectAsState()
+    val customSoundSlots by soundViewModel.customSoundSlots.collectAsState()
     val recording by soundViewModel.isCustomRecording.collectAsState()
     val sounds by soundViewModel.allSounds.collectAsState()
     val customSounds = sounds.filter { it.filePath != null }
@@ -84,40 +84,37 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
 
     BackHandler { leaveScreen() }
 
+    fun unlockSlotWithReward() {
+        val ad = rewardedAd
+        if (activity == null) error = "Could not open the ad from this screen."
+        else if (ad == null) loadRewardedAd()
+        else {
+            rewardedAd = null
+            AdManager.showRewardedAd(
+                activity,
+                ad,
+                onRewardEarned = { soundViewModel.unlockNextCustomSoundSlot() },
+                onDismissed = { loadRewardedAd() },
+                onShowFailed = { error = "Could not show the ad."; loadRewardedAd() }
+            )
+        }
+    }
+
     Scaffold(
         containerColor = Background,
         topBar = {
             TopAppBar(
-                title = { Text("My Sounds", color = Color.White, fontWeight = FontWeight.Black) },
+                title = { Text("Custom sounds", color = Color.White, fontWeight = FontWeight.Black) },
                 navigationIcon = { IconButton(onClick = ::leaveScreen) { Icon(Icons.Default.ArrowBack, "Back", tint = Color.White) } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Background)
             )
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(24.dp)) {
-            Text("Your private reaction vault.", color = Color.White.copy(alpha = 0.7f), fontSize = 15.sp)
+            Text("Your private reaction vault. Clips stay on this device.", color = Color.White.copy(alpha = 0.7f), fontSize = 15.sp)
             Spacer(Modifier.height(18.dp))
-            if (!unlocked) {
-                Text("Unlock once, keep it forever.", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                Spacer(Modifier.height(8.dp))
-                Text("Watch one optional ad to record and save up to five sounds on this phone.", color = Color.White.copy(alpha = 0.65f))
-                Spacer(Modifier.height(20.dp))
-                Button(
-                    onClick = {
-                        val ad = rewardedAd
-                        if (activity == null) error = "Could not open the ad from this screen."
-                        else if (ad == null) loadRewardedAd()
-                        else {
-                            rewardedAd = null
-                            AdManager.showRewardedAd(activity, ad, onRewardEarned = { soundViewModel.unlockMySounds() }, onDismissed = { loadRewardedAd() }, onShowFailed = { error = "Could not show the ad."; loadRewardedAd() })
-                        }
-                    },
-                    enabled = rewardedAd != null || !loadingAd,
-                    colors = ButtonDefaults.buttonColors(containerColor = Primary),
-                    modifier = Modifier.fillMaxWidth().height(56.dp)
-                ) { Text(if (loadingAd) "Loading ad…" else "Watch 1 ad to unlock", fontWeight = FontWeight.Bold) }
-            } else {
-                Text("${customSounds.size} / ${SoundViewModel.FREE_CUSTOM_SOUND_LIMIT} saved", color = Primary, fontWeight = FontWeight.Bold)
+            Text("${customSounds.size} saved · $customSoundSlots unlocked slots", color = Primary, fontWeight = FontWeight.Bold)
+            Text("Add another slot whenever you want. There is no five-sound cap.", color = Color.White.copy(alpha = 0.55f), fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
                 Spacer(Modifier.height(14.dp))
                 OutlinedTextField(value = name, onValueChange = { name = it.take(24) }, label = { Text("Sound name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(10.dp))
@@ -125,19 +122,19 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
                     onClick = {
                         if (recording) {
                             soundViewModel.stopCustomSoundRecording(name).onSuccess { soundViewModel.selectSound(it) }.onFailure { error = it.message }
-                        } else if (customSounds.size >= SoundViewModel.FREE_CUSTOM_SOUND_LIMIT) {
-                            error = "Your five free slots are full. Delete one to record another."
+                        } else if (customSounds.size >= customSoundSlots) {
+                            unlockSlotWithReward()
                         } else permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                     },
+                    enabled = recording || rewardedAd != null || !loadingAd || customSounds.size < customSoundSlots,
                     colors = ButtonDefaults.buttonColors(containerColor = if (recording) Color(0xFFE53935) else Primary),
                     modifier = Modifier.fillMaxWidth().height(56.dp)
-                ) { Icon(if (recording) Icons.Default.Stop else Icons.Default.Mic, null); Spacer(Modifier.width(8.dp)); Text(if (recording) "Stop and save" else "Record up to 8 seconds") }
+                ) { Icon(if (recording) Icons.Default.Stop else Icons.Default.Mic, null); Spacer(Modifier.width(8.dp)); Text(if (recording) "Stop and save" else if (customSounds.size >= customSoundSlots) if (loadingAd) "Loading ad…" else "Watch 1 ad for a sound slot" else "Record up to 8 seconds") }
                 if (recording) Text("Recording… tap stop when the chaos is perfect.", color = Primary, modifier = Modifier.padding(top = 8.dp))
                 Spacer(Modifier.height(18.dp))
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(customSounds, key = { it.id }) { sound -> CustomSoundRow(sound, { soundViewModel.playSoundPreview(sound) }, { soundViewModel.selectSound(sound) }, { soundViewModel.deleteCustomSound(sound.id) }) }
                 }
-            }
             error?.let { Text(it, color = Color(0xFFFF8A80), modifier = Modifier.padding(top = 12.dp)) }
         }
     }

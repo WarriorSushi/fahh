@@ -7,6 +7,8 @@
 
 > **Product decision update, July 10, 2026:** Fahh 1.1.0 will not sell a subscription, lifetime unlock, or any paid feature. The complete experience remains financially free. Rewarded ads may unlock optional convenience features such as My Sounds, but users will always have a free path to the core app, recording, editing, sharing, and sound library. Revisit paid products only after retention and user feedback demonstrate that they would add real value.
 
+> **Implementation update, July 11, 2026:** “My Sounds” is now called **Custom sounds** in the app. The prior five-slot proposal is superseded: each saved custom sound requires one user-chosen rewarded ad to add its slot, with no artificial five-sound limit. Existing early one-time unlocks are grandfathered as five local slots. All remaining references to a five-slot or Pro model below are historical exploration, not current product requirements.
+
 ## 1. Executive recommendation
 
 ## 1.1 Implemented 1.1.0 scope and deliberate deferrals
@@ -20,8 +22,8 @@ for **Fahh 1.1.0** is therefore the following:
 | Safe catalog IDs, upgrade migration, and preservation of unlocks | Complete | Existing unlocks are preserved while the built-in catalog can grow safely. |
 | Copyright gate for downloaded sounds | Complete process | No staged download is shipped unless its commercial redistribution right is documented. Four deliberately removed files stay removed. |
 | Forced recording-flow interstitials | Complete | Removed. A saved recording opens straight into review. |
-| Total lifetime button presses | Complete | A prominent local `FAHHS` counter provides a small bragging right without collecting user data. |
-| My Sounds | Complete | One voluntary rewarded ad unlocks local microphone recordings permanently on that device; users can keep up to five private clips. |
+| Total lifetime button presses | Complete | A prominent local `presses` counter provides a small bragging right without collecting user data. |
+| Custom sounds | Complete | Each voluntary rewarded ad adds one local microphone-recording slot. Clips stay private on device and users can add slots as needed. |
 | Sound discovery | Complete for the current catalog | The swipe drawer remains a one-swipe, one-tap sound picker and includes My Sounds. A 50-plus-sound search/pin library waits until cleared sound assets actually make that necessary. |
 | Paid subscription/lifetime unlock | Deliberately deferred | No paid feature ships in 1.1.0. Do not imply a future price rise or use urgency tactics. |
 | Login, Google OAuth, Supabase, global leaderboard | Deliberately deferred | These require a backend, abuse controls, privacy disclosures, deletion pathways, and moderation. They are not required for this local, free release. |
@@ -33,8 +35,9 @@ for **Fahh 1.1.0** is therefore the following:
 1. Add only sounds with written commercial redistribution permission to the rights
    ledger, then run device-level audio and content-rating QA.
 2. Install the release candidate on at least one old Android device and one current
-   device, exercising microphone permission, rewarded-ad failure/dismissal, five
-   custom clips, deletion, sound selection, camera recording, trim, and share.
+   device, exercising microphone permission, rewarded-ad failure/dismissal, adding
+   more than five custom-sound slots, deletion, sound selection, camera recording,
+   trim, and share.
 3. Build a signed release AAB with the externalized upload key, incrementing from
    the version code already live in Play Console if `8` is not unused.
 4. Re-check the Play Console policy forms and run an internal/closed rollout before

@@ -179,6 +179,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         CameraScreen(
                             onBack = { navController.popBackStack() },
+                            onCustomSoundsClick = { navController.navigate(Screen.MySounds.route) },
                             onVideoSaved = { file ->
                                 lastVideoFile = file
                                 soundViewModel.onRecordingFinished()

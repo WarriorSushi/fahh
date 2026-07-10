@@ -23,7 +23,7 @@ class CustomSoundRepository @Inject constructor(@ApplicationContext private val 
             name = name.trim().ifBlank { "My Fahh" },
             resId = 0,
             icon = "✦",
-            packName = "My Sounds",
+            packName = "Custom sounds",
             id = "custom_${UUID.randomUUID()}",
             filePath = file.absolutePath
         )
@@ -46,7 +46,7 @@ class CustomSoundRepository @Inject constructor(@ApplicationContext private val 
                 val entry = entries.getJSONObject(index)
                 val path = entry.getString("path")
                 if (File(path).exists()) {
-                    add(Sound(entry.getString("name"), 0, "✦", false, "My Sounds", entry.getString("id"), path))
+                    add(Sound(entry.getString("name"), 0, "✦", false, "Custom sounds", entry.getString("id"), path))
                 }
             }
         }

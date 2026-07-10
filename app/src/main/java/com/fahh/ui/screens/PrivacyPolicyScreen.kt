@@ -73,7 +73,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
             )
             PrivacySection(
                 title = "Sound Unlocks",
-                content = "Watching a rewarded ad unlocks one named sound, or My Sounds, permanently on this device. These unlock preferences are stored locally and are not restored after an uninstall."
+                content = "Watching a rewarded ad unlocks one named bundled sound, or adds one Custom sounds recording slot, on this device. These local unlock preferences are not restored after an uninstall."
             )
             PrivacySection(
                 title = "Children's Privacy",

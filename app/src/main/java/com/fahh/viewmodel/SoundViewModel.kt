@@ -84,6 +84,12 @@ class SoundViewModel @Inject constructor(
         initialValue = false
     )
 
+    val customSoundSlots = settingsRepository.customSoundSlotsFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 0
+    )
+
     /** Reads the actual DataStore value (not the stateIn initial). */
     suspend fun isFirstRunResolved(): Boolean = settingsRepository.isFirstRunFlow.first()
 
@@ -175,14 +181,16 @@ class SoundViewModel @Inject constructor(
     }
 
     fun startCustomSoundRecording(): Result<Unit> = runCatching {
+        check(customSoundRepository.sounds.value.size < customSoundSlots.value) {
+            "Watch an ad to add a custom sound slot first."
+        }
         customSoundRecorder.start()
         _isCustomRecording.value = true
     }
 
     fun stopCustomSoundRecording(name: String): Result<Sound> = runCatching {
-        check(mySoundsUnlocked.value) { "Unlock My Sounds first." }
-        check(customSoundRepository.sounds.value.size < FREE_CUSTOM_SOUND_LIMIT) {
-            "Free My Sounds is full. Delete one to record another."
+        check(customSoundRepository.sounds.value.size < customSoundSlots.value) {
+            "No custom sound slot is available."
         }
         val file = customSoundRecorder.stop()
         _isCustomRecording.value = false
@@ -198,6 +206,10 @@ class SoundViewModel @Inject constructor(
 
     fun unlockMySounds() {
         viewModelScope.launch { settingsRepository.unlockMySounds() }
+    }
+
+    fun unlockNextCustomSoundSlot() {
+        viewModelScope.launch { settingsRepository.unlockNextCustomSoundSlot() }
     }
 
     fun deleteCustomSound(soundId: String) {
@@ -262,10 +274,6 @@ class SoundViewModel @Inject constructor(
     fun onRatingDismissed() {
         _showRatingPrompt.value = false
         viewModelScope.launch { settingsRepository.incrementRatingDismissCount() }
-    }
-
-    companion object {
-        const val FREE_CUSTOM_SOUND_LIMIT = 5
     }
 
     override fun onCleared() {

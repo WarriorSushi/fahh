@@ -62,6 +62,7 @@ private fun requiredCameraPermissions(): Array<String> {
 @Composable
 fun CameraScreen(
     onBack: () -> Unit,
+    onCustomSoundsClick: () -> Unit,
     onVideoSaved: (File) -> Unit,
     soundViewModel: SoundViewModel,
     cameraViewModel: CameraViewModel = hiltViewModel()
@@ -159,7 +160,15 @@ fun CameraScreen(
                     noticeMessage = null,
                     onDismissNotice = {},
                     onClose = { scope.launch { drawerState.close() } },
-                    onPrivacyClick = {}
+                    onPrivacyClick = {},
+                    onMySoundsClick = {
+                        if (isRecording) {
+                            scope.launch { snackbarHostState.showSnackbar("Finish recording before changing custom sounds.") }
+                        } else {
+                            scope.launch { drawerState.close() }
+                            onCustomSoundsClick()
+                        }
+                    }
                 )
             }
         }
@@ -227,7 +236,8 @@ fun CameraScreen(
 
                     // Sounds drawer button (top right)
                     IconButton(
-                        onClick = { scope.launch { drawerState.open() } },
+                        onClick = { if (!isRecording) scope.launch { drawerState.open() } },
+                        enabled = !isRecording,
                         modifier = Modifier
                             .premiumGlass(CircleShape, alpha = 0.1f)
                             .size(48.dp)
@@ -356,4 +366,3 @@ private fun PermissionRequiredContent(onGrantClick: () -> Unit) {
         }
     }
 }
-

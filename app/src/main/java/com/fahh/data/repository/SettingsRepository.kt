@@ -40,6 +40,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val TOTAL_FAHH_COUNT = intPreferencesKey("total_fahh_count")
         val HIGHEST_COMBO_TIER = intPreferencesKey("highest_combo_tier")
         val MY_SOUNDS_UNLOCKED = androidx.datastore.preferences.core.booleanPreferencesKey("my_sounds_unlocked")
+        val CUSTOM_SOUND_SLOTS = intPreferencesKey("custom_sound_slots")
     }
 
     val volumeFlow: Flow<Float> = context.dataStore.data.map { preferences ->
@@ -176,6 +177,26 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.MY_SOUNDS_UNLOCKED] = true
         }
+    }
+
+    /**
+     * A rewarded custom-sound slot is local to this device. The old one-time unlock is
+     * treated as five grandfathered slots so an early tester never loses access.
+     */
+    val customSoundSlotsFlow: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.CUSTOM_SOUND_SLOTS]
+            ?: if (preferences[PreferencesKeys.MY_SOUNDS_UNLOCKED] == true) 5 else 0
+    }
+
+    suspend fun unlockNextCustomSoundSlot(): Int {
+        var newSlotCount = 0
+        context.dataStore.edit { preferences ->
+            val current = preferences[PreferencesKeys.CUSTOM_SOUND_SLOTS]
+                ?: if (preferences[PreferencesKeys.MY_SOUNDS_UNLOCKED] == true) 5 else 0
+            newSlotCount = current + 1
+            preferences[PreferencesKeys.CUSTOM_SOUND_SLOTS] = newSlotCount
+        }
+        return newSlotCount
     }
 
     val watermarkEnabledFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->

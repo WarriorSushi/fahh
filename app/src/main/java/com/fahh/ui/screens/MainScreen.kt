@@ -45,6 +45,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.Videocam
@@ -57,6 +60,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -543,20 +549,15 @@ private fun MainContent(
                                 )
                             }
                         }
-                        IconButton(
-                            onClick = onMenuClick,
-                            modifier = Modifier
-                                .padding(end = 8.dp)
-                                .premiumGlass(CircleShape, alpha = 0.05f)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.GridView,
-                                contentDescription = "Open sound menu",
-                                tint = Color.White
-                            )
-                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                )
+            },
+            bottomBar = {
+                FahhBottomBar(
+                    onCameraClick = onCameraClick,
+                    onGalleryClick = onGalleryClick,
+                    onMenuClick = onMenuClick
                 )
             }
         ) { padding ->
@@ -585,7 +586,7 @@ private fun MainContent(
                             color = Primary.copy(alpha = 0.12f)
                         ) {
                             Text(
-                                text = "$totalFahhCount FAHHS",
+                                text = "$totalFahhCount presses",
                                 color = Primary,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.ExtraBold,
@@ -629,65 +630,8 @@ private fun MainContent(
                     }
                 }
 
-                // Camera + Gallery buttons
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 28.dp)
-                ) {
-                    Surface(
-                        onClick = onCameraClick,
-                        shape = RoundedCornerShape(50),
-                        color = Color.White.copy(alpha = 0.10f),
-                        contentColor = Color.White
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 28.dp, vertical = 14.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Videocam,
-                                contentDescription = "Camera",
-                                tint = Primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Camera",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = Color.White.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-
-                    Surface(
-                        onClick = onGalleryClick,
-                        shape = CircleShape,
-                        color = Color.White.copy(alpha = 0.10f),
-                        contentColor = Color.White,
-                        modifier = Modifier.size(46.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.VideoLibrary,
-                                contentDescription = "Gallery",
-                                tint = Color.White.copy(alpha = 0.7f),
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                }
             }
         }
-
-        // Swipe hint on right edge — tappable to open sidebar (must be after Scaffold to receive taps)
-        SwipeEdgeTab(
-            onClick = onMenuClick,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(bottom = 140.dp)
-        )
 
         // ═══ WALKTHROUGH OVERLAYS ═══
 
@@ -772,7 +716,7 @@ private fun MainContent(
             exit = fadeOut(tween(400)),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 36.dp, bottom = 160.dp)
+                .padding(end = 12.dp, bottom = 96.dp)
         ) {
             LaunchedEffect(Unit) {
                 delay(3500)
@@ -792,13 +736,13 @@ private fun MainContent(
                 ) {
                     Column {
                         Text(
-                            text = "psst… more sounds",
+                            text = "psst… sounds live down here",
                             color = Color.White,
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "hiding over there →",
+                            text = "tap Sounds to browse →",
                             color = Primary,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold
@@ -809,6 +753,70 @@ private fun MainContent(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun FahhBottomBar(
+    onCameraClick: () -> Unit,
+    onGalleryClick: () -> Unit,
+    onMenuClick: () -> Unit
+) {
+    NavigationBar(
+        containerColor = Color(0xFF111923),
+        contentColor = Color.White,
+        tonalElevation = 0.dp
+    ) {
+        NavigationBarItem(
+            selected = true,
+            onClick = {},
+            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+            label = { Text("Home") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Primary,
+                selectedTextColor = Primary,
+                indicatorColor = Primary.copy(alpha = 0.12f),
+                unselectedIconColor = Color.White.copy(alpha = 0.6f),
+                unselectedTextColor = Color.White.copy(alpha = 0.6f)
+            )
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = onGalleryClick,
+            icon = { Icon(Icons.Default.PhotoLibrary, contentDescription = "Reaction gallery") },
+            label = { Text("Gallery") },
+            colors = NavigationBarItemDefaults.colors(
+                unselectedIconColor = Color.White.copy(alpha = 0.6f),
+                unselectedTextColor = Color.White.copy(alpha = 0.6f)
+            )
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = onCameraClick,
+            icon = {
+                Surface(
+                    onClick = onCameraClick,
+                    shape = CircleShape,
+                    color = Primary,
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.offset(y = (-18).dp).size(62.dp)
+                ) {
+                    Icon(Icons.Default.Videocam, contentDescription = "Open camera", tint = Color.White, modifier = Modifier.padding(16.dp))
+                }
+            },
+            label = { Text("Camera", modifier = Modifier.offset(y = (-10).dp)) },
+            colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = onMenuClick,
+            icon = { Icon(Icons.Default.Menu, contentDescription = "Open sounds") },
+            label = { Text("Sounds") },
+            colors = NavigationBarItemDefaults.colors(
+                unselectedIconColor = Color.White.copy(alpha = 0.6f),
+                unselectedTextColor = Color.White.copy(alpha = 0.6f)
+            )
+        )
     }
 }
 

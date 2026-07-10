@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Divider
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,6 +36,7 @@ fun SoundGrid(
     selectedSound: Sound,
     onSoundPreview: (Sound) -> Unit,
     onSoundSelected: (Sound) -> Unit,
+    onMoreSoundsClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val unlocked = sounds.filter { !it.isLocked }
@@ -51,10 +53,32 @@ fun SoundGrid(
             SoundTile(
                 sound = sound,
                 isSelected = sound == selectedSound,
-                isRecentlyUnlocked = !sound.isLocked && sound.packName != "Free",
                 onPreview = { onSoundPreview(sound) },
                 onSelect = { onSoundSelected(sound) }
             )
+        }
+        if (onMoreSoundsClick != null) {
+            item(span = { GridItemSpan(2) }) {
+                Surface(
+                    onClick = onMoreSoundsClick,
+                    shape = RoundedCornerShape(14.dp),
+                    color = Primary,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 50.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("More sounds", color = Color.White, fontWeight = FontWeight.Black)
+                            Text("Browse the full sound library", color = Color.White.copy(alpha = 0.78f), fontSize = 11.sp)
+                        }
+                        Icon(Icons.Default.ArrowForward, contentDescription = "Browse more sounds", tint = Color.White)
+                    }
+                }
+            }
         }
         if (locked.isNotEmpty()) {
             item(span = { GridItemSpan(2) }) {
@@ -68,7 +92,6 @@ fun SoundGrid(
                 SoundTile(
                     sound = sound,
                     isSelected = sound == selectedSound,
-                    isRecentlyUnlocked = false,
                     onPreview = { onSoundPreview(sound) },
                     onSelect = { onSoundSelected(sound) }
                 )
@@ -81,20 +104,19 @@ fun SoundGrid(
 private fun SoundTile(
     sound: Sound,
     isSelected: Boolean,
-    isRecentlyUnlocked: Boolean,
     onPreview: () -> Unit,
     onSelect: () -> Unit
 ) {
     val tileColor = when {
         isSelected -> Primary.copy(alpha = 0.18f)
-        sound.isLocked -> Color.White.copy(alpha = 0.02f)
-        else -> Color.White.copy(alpha = 0.10f)
+        sound.isLocked -> Color(0xFF111722)
+        else -> Color(0xFF18202D)
     }
 
     val borderBrush = when {
         isSelected -> Brush.verticalGradient(listOf(Primary, Primary.copy(alpha = 0.4f)))
-        sound.isLocked -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.04f), Color.White.copy(alpha = 0.02f)))
-        else -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.12f), Color.White.copy(alpha = 0.05f)))
+        sound.isLocked -> Brush.verticalGradient(listOf(Color(0xFF283241), Color(0xFF161D28)))
+        else -> Brush.verticalGradient(listOf(Color(0xFF445166), Color(0xFF273343)))
     }
 
 
@@ -102,7 +124,7 @@ private fun SoundTile(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         modifier = Modifier
-            .height(120.dp)
+            .height(112.dp)
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onSelect)
             .border(
@@ -153,21 +175,6 @@ private fun SoundTile(
                         fontSize = 13.sp,
                         modifier = if (!sound.isLocked) Modifier.padding(start = 22.dp) else Modifier
                     )
-                    if (isRecentlyUnlocked) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Surface(
-                            shape = RoundedCornerShape(3.dp),
-                            color = Color(0xFF22C55E).copy(alpha = 0.2f)
-                        ) {
-                            Text(
-                                text = "NEW",
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFF22C55E),
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                            )
-                        }
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))

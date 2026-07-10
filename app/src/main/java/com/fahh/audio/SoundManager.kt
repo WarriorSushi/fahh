@@ -16,6 +16,9 @@ import javax.inject.Singleton
 class SoundManager @Inject constructor(@ApplicationContext private val context: Context) {
     private val soundPool: SoundPool
     private val soundMap = mutableMapOf<Int, Int>()
+    private val resourceBySampleId = mutableMapOf<Int, Int>()
+    private val pendingPlayback = mutableMapOf<Int, Float>()
+    private var activePoolStreamId: Int? = null
     private var customPlayer: MediaPlayer? = null
     
     init {
@@ -25,10 +28,15 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
             .build()
             
         soundPool = SoundPool.Builder()
-            .setMaxStreams(10)
+            .setMaxStreams(1)
             .setAudioAttributes(audioAttributes)
             .build()
             
+        soundPool.setOnLoadCompleteListener { _, sampleId, status ->
+            if (status != 0) return@setOnLoadCompleteListener
+            val resId = resourceBySampleId[sampleId] ?: return@setOnLoadCompleteListener
+            pendingPlayback.remove(resId)?.let { volume -> playLoadedSample(sampleId, volume) }
+        }
         preloadSounds()
     }
 
@@ -49,6 +57,7 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
     private fun loadSound(resId: Int) {
         val soundId = soundPool.load(context, resId, 1)
         soundMap[resId] = soundId
+        resourceBySampleId[soundId] = resId
     }
 
     fun playSound(sound: Sound, volume: Float = 1.0f) {
@@ -63,22 +72,25 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
     private fun playSound(resId: Int, volume: Float = 1.0f) {
         val soundId = soundMap[resId]
         if (soundId != null && soundId != 0) {
-            soundPool.play(soundId, volume, volume, 1, 0, 1.0f)
+            playLoadedSample(soundId, volume)
         } else {
-            // Load on demand then play after a short delay
+            // The load callback starts only the most recently requested sound.
+            pendingPlayback.clear()
+            pendingPlayback[resId] = volume
             loadSound(resId)
-            soundPool.setOnLoadCompleteListener { _, sampleId, status ->
-                if (status == 0) {
-                    soundPool.play(sampleId, volume, volume, 1, 0, 1.0f)
-                }
-            }
         }
+    }
+
+    private fun playLoadedSample(sampleId: Int, volume: Float) {
+        pendingPlayback.clear()
+        stopActiveSound()
+        activePoolStreamId = soundPool.play(sampleId, volume, volume, 1, 0, 1.0f)
     }
 
     private fun playCustomSound(filePath: String, volume: Float) {
         val file = File(filePath)
         if (!file.exists()) return
-        customPlayer?.release()
+        stopActiveSound()
         customPlayer = MediaPlayer().apply {
             setAudioAttributes(
                 AudioAttributes.Builder()
@@ -103,8 +115,15 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
     }
 
     fun release() {
+        stopActiveSound()
+        soundPool.release()
+    }
+
+    /** Fahh is a reaction trigger, not a mixer. The latest tap always wins. */
+    private fun stopActiveSound() {
+        activePoolStreamId?.let(soundPool::stop)
+        activePoolStreamId = null
         customPlayer?.release()
         customPlayer = null
-        soundPool.release()
     }
 }
