@@ -108,7 +108,9 @@ class SoundViewModel @Inject constructor(
                 "Romance Sax" -> "romantic"
                 else -> null
             }
-            val sounds = repository.allSounds.first()
+            val sounds = combine(repository.allSounds, customSoundRepository.sounds) { catalog, custom ->
+                catalog + custom
+            }.first()
             val lastSound = sounds.find { it.id == lastSoundId && !it.isLocked }
                 ?: sounds.find { it.id == legacySoundId && !it.isLocked }
                 ?: sounds.find { it.name == lastName && !it.isLocked }
@@ -201,7 +203,7 @@ class SoundViewModel @Inject constructor(
     fun deleteCustomSound(soundId: String) {
         customSoundRepository.delete(soundId)
         if (_selectedSound.value.id == soundId) {
-            _selectedSound.value = SoundCatalog.defaultSelectedSound
+            selectSound(SoundCatalog.defaultSelectedSound)
         }
     }
 
@@ -267,6 +269,7 @@ class SoundViewModel @Inject constructor(
     }
 
     override fun onCleared() {
+        customSoundRecorder.cancel()
         super.onCleared()
     }
 

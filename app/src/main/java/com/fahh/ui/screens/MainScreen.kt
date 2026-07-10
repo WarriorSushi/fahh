@@ -88,6 +88,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import com.fahh.R
+import com.fahh.BuildConfig
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
@@ -108,7 +109,8 @@ import com.google.android.gms.ads.rewarded.RewardedAd
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private const val RewardedAdUnitId = "ca-app-pub-1006057089920582/1635547968"
+private const val TestRewardedAdUnitId = "ca-app-pub-3940256099942544/5224354917"
+private const val ProductionRewardedAdUnitId = "ca-app-pub-1006057089920582/1635547968"
 
 private data class SidebarNotice(
     val token: Long,
@@ -122,6 +124,7 @@ fun MainScreen(
     onPrivacyClick: () -> Unit,
     onComingSoonClick: () -> Unit,
     onGalleryClick: () -> Unit,
+    onMySoundsClick: () -> Unit,
     viewModel: SoundViewModel
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -172,7 +175,7 @@ fun MainScreen(
         isRewardedAdLoading = true
         AdManager.loadRewardedAd(
             context = context,
-            adUnitId = RewardedAdUnitId,
+            adUnitId = if (BuildConfig.DEBUG) TestRewardedAdUnitId else ProductionRewardedAdUnitId,
             onAdLoaded = { ad ->
                 rewardedAd = ad
                 isRewardedAdLoading = false
@@ -213,9 +216,9 @@ fun MainScreen(
             containerColor = Color(0xFF161B22),
             titleContentColor = Color.White,
             textContentColor = Color.White.copy(alpha = 0.7f),
-            title = { Text("Unlock ${sound.packName} Pack", fontWeight = FontWeight.Bold) },
+            title = { Text("Unlock ${sound.name}", fontWeight = FontWeight.Bold) },
             text = {
-                Text("Watch a short rewarded ad to unlock this sound pack.")
+                Text("Watch one short ad to unlock this sound permanently on this device.")
             },
             confirmButton = {
                 Button(
@@ -380,6 +383,10 @@ fun MainScreen(
                                 onPrivacyClick = {
                                     scope.launch { drawerState.close() }
                                     onPrivacyClick()
+                                },
+                                onMySoundsClick = {
+                                    scope.launch { drawerState.close() }
+                                    onMySoundsClick()
                                 },
                                 onSettingsClick = { showSettings = true },
                                 onTipJarClick = { showTipJarDialog = true }
@@ -561,12 +568,32 @@ private fun MainContent(
             ) {
                 // Stats row at top
                 if (totalFahhCount > 0) {
-                    Text(
-                        text = "\uD83D\uDD25 $streak day streak \u00B7 $totalFahhCount presses",
-                        color = Color.White.copy(alpha = 0.4f),
-                        fontSize = 12.sp,
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(top = 8.dp)
-                    )
+                    ) {
+                        if (streak > 0) {
+                            Text(
+                                text = "\uD83D\uDD25 $streak day streak",
+                                color = Color.White.copy(alpha = 0.4f),
+                                fontSize = 12.sp
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = Primary.copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                text = "$totalFahhCount FAHHS",
+                                color = Primary,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.6.sp,
+                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
                 }
 
                 // Main button area

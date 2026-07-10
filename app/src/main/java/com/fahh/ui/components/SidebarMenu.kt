@@ -40,6 +40,7 @@ fun SidebarMenu(
     onDismissNotice: () -> Unit,
     onClose: () -> Unit,
     onPrivacyClick: () -> Unit,
+    onMySoundsClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onTipJarClick: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -217,6 +218,28 @@ fun SidebarMenu(
                         tint = Color.White.copy(alpha = 0.7f),
                         modifier = Modifier.size(18.dp)
                     )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Surface(
+                    onClick = onMySoundsClick,
+                    shape = RoundedCornerShape(16.dp),
+                    color = Primary.copy(alpha = 0.12f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 13.dp)
+                    ) {
+                        Text(text = "\uD83C\uDFA4", fontSize = 18.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("My Sounds", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text("Record your own reactions", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp)
+                        }
+                        Text("→", color = Primary, fontWeight = FontWeight.Bold)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

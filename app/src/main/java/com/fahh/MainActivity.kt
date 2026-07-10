@@ -131,6 +131,9 @@ class MainActivity : ComponentActivity() {
                             onGalleryClick = {
                                 navController.navigate(Screen.Gallery.route)
                             },
+                            onMySoundsClick = {
+                                navController.navigate(Screen.MySounds.route)
+                            },
                             viewModel = soundViewModel
                         )
                     }
@@ -258,6 +261,19 @@ class MainActivity : ComponentActivity() {
                             onDelete = { file ->
                                 runCatching { file.delete() }
                             }
+                        )
+                    }
+
+                    composable(
+                        Screen.MySounds.route,
+                        enterTransition = slideLeft,
+                        exitTransition = slideOutLeft,
+                        popEnterTransition = slideRight,
+                        popExitTransition = slideOutRight
+                    ) {
+                        MySoundsScreen(
+                            onBack = { navController.popBackStack() },
+                            soundViewModel = soundViewModel
                         )
                     }
                 }

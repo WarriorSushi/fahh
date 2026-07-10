@@ -61,11 +61,11 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
 
             PrivacySection(
                 title = "Data Collection",
-                content = "Fahh does not collect, store, or transmit any personal data. All your videos, sound preferences, and settings stay on your device. We have zero servers — your data is yours."
+                content = "Fahh has no accounts and does not upload your videos, custom sounds, sound preferences, or settings to our servers. They stay on your device. Advertising is provided by Google AdMob and is described below."
             )
             PrivacySection(
                 title = "Permissions",
-                content = "Camera & Microphone: Used only during recording to capture video with sound effects. Storage: Used to save recorded videos to your gallery. No data is uploaded anywhere."
+                content = "Camera & Microphone: used only to record videos and the optional My Sounds clips you choose to create. Custom sounds are stored privately on this device and are deleted when you delete them in Fahh. Storage: used to save recorded videos to your gallery. No recording is uploaded by Fahh."
             )
             PrivacySection(
                 title = "Advertisements",
@@ -73,7 +73,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
             )
             PrivacySection(
                 title = "Sound Unlocks",
-                content = "Watching a rewarded ad unlocks sounds permanently on your device. This preference is stored locally and never shared."
+                content = "Watching a rewarded ad unlocks one named sound, or My Sounds, permanently on this device. These unlock preferences are stored locally and are not restored after an uninstall."
             )
             PrivacySection(
                 title = "Children's Privacy",
@@ -87,7 +87,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Last updated: Feb 2026",
+                text = "Last updated: July 2026",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.45f),
                 modifier = Modifier.align(Alignment.CenterHorizontally)
