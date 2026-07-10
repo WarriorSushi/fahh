@@ -265,6 +265,13 @@ fun SettingsSheet(
                     }
                 }
 
+                Text(
+                    text = "Every combo is counted inside a rolling 3-second window.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.42f),
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+                )
+
                 Spacer(modifier = Modifier.height(24.dp))
             }
 

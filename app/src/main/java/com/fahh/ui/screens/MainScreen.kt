@@ -45,6 +45,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.NewReleases
@@ -550,6 +551,14 @@ private fun MainContent(
     // Get current rank label for top bar
     val currentRank = comboTiers.lastOrNull { it.index <= highestComboTier }
     var achievementsExpanded by remember { mutableStateOf(false) }
+    val achievementScale = remember { Animatable(1f) }
+    LaunchedEffect(currentRank?.index) {
+        if (currentRank != null) {
+            achievementScale.snapTo(0.92f)
+            achievementScale.animateTo(1.12f, spring(dampingRatio = 0.48f, stiffness = 680f))
+            achievementScale.animateTo(1f, tween(160))
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -590,7 +599,13 @@ private fun MainContent(
                         Surface(
                             onClick = { achievementsExpanded = true },
                             shape = RoundedCornerShape(50),
-                            color = (currentRank?.color ?: Primary).copy(alpha = 0.12f)
+                            color = (currentRank?.color ?: Primary).copy(alpha = 0.12f),
+                            border = BorderStroke(1.dp, (currentRank?.color ?: Primary).copy(alpha = 0.35f)),
+                            shadowElevation = 4.dp,
+                            modifier = Modifier.graphicsLayer {
+                                scaleX = achievementScale.value
+                                scaleY = achievementScale.value
+                            }
                         ) {
                             Text(
                                 text = currentRank?.label ?: "ACHIEVEMENTS",
@@ -617,6 +632,10 @@ private fun MainContent(
                                     onClick = { achievementsExpanded = false }
                                 )
                             }
+                            DropdownMenuItem(
+                                text = { Text("Combos count taps within 3 seconds.", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp) },
+                                onClick = { achievementsExpanded = false }
+                            )
                         }
                     }
                 }
@@ -679,12 +698,13 @@ private fun MainContent(
                         buttonSize = 260.dp
                     )
 
-                    // Flying combo texts — start above the button, fly upward
-                    Box(
+                    // New combo titles enter below older ones, physically pushing them upward.
+                    Column(
                         modifier = Modifier
                             .align(Alignment.Center)
                             .offset(y = (-170).dp),
-                        contentAlignment = Alignment.Center
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         flyingTexts.forEach { ft ->
                             key(ft.id) {
@@ -700,6 +720,19 @@ private fun MainContent(
 
             }
         }
+
+        SwipeEdgeTab(
+            label = "New",
+            fromLeft = true,
+            onClick = onNewSoundsClick,
+            modifier = Modifier.align(Alignment.CenterStart).padding(bottom = 88.dp)
+        )
+        SwipeEdgeTab(
+            label = "Sounds",
+            fromLeft = false,
+            onClick = onMenuClick,
+            modifier = Modifier.align(Alignment.CenterEnd).padding(bottom = 88.dp)
+        )
 
         // ═══ WALKTHROUGH OVERLAYS ═══
 
@@ -830,10 +863,12 @@ private fun FahhBottomBar(
     onNewSoundsClick: () -> Unit,
     onMenuClick: () -> Unit
 ) {
+    Box(modifier = Modifier.fillMaxWidth().height(116.dp)) {
     NavigationBar(
         containerColor = Color(0xFF111923),
         contentColor = Color.White,
-        tonalElevation = 0.dp
+        tonalElevation = 0.dp,
+        modifier = Modifier.align(Alignment.BottomCenter)
     ) {
         NavigationBarItem(
             selected = false,
@@ -845,23 +880,7 @@ private fun FahhBottomBar(
                 unselectedTextColor = Color.White.copy(alpha = 0.6f)
             )
         )
-        NavigationBarItem(
-            selected = false,
-            onClick = onCameraClick,
-            icon = {
-                Surface(
-                    onClick = onCameraClick,
-                    shape = CircleShape,
-                    color = Primary,
-                    shadowElevation = 8.dp,
-                    modifier = Modifier.offset(y = (-18).dp).size(62.dp)
-                ) {
-                    Icon(Icons.Default.Videocam, contentDescription = "Open camera", tint = Color.White, modifier = Modifier.padding(16.dp))
-                }
-            },
-            label = { Text("Camera", modifier = Modifier.offset(y = (-10).dp)) },
-            colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
-        )
+        Spacer(modifier = Modifier.weight(1f))
         NavigationBarItem(
             selected = false,
             onClick = onMenuClick,
@@ -873,6 +892,22 @@ private fun FahhBottomBar(
             )
         )
     }
+        Column(
+            modifier = Modifier.align(Alignment.TopCenter),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Surface(
+                onClick = onCameraClick,
+                shape = CircleShape,
+                color = Primary,
+                shadowElevation = 12.dp,
+                modifier = Modifier.size(84.dp)
+            ) {
+                Icon(Icons.Default.Videocam, contentDescription = "Open camera", tint = Color.White, modifier = Modifier.padding(21.dp))
+            }
+            Text("Camera", color = Color.White.copy(alpha = 0.76f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        }
+    }
 }
 
 @Composable
@@ -883,7 +918,6 @@ private fun FlyingComboText(
 ) {
     val alpha = remember { Animatable(0f) }
     val scale = remember { Animatable(0.3f) }
-    val offsetY = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
         // Pop in
@@ -893,10 +927,9 @@ private fun FlyingComboText(
         delay(200)
         // Shrink slightly to normal
         launch { scale.animateTo(1f, tween(150)) }
-        // Float upward and fade out
-        delay(600)
-        launch { offsetY.animateTo(-160f, tween(700, easing = LinearOutSlowInEasing)) }
-        alpha.animateTo(0f, tween(700))
+        // The parent column controls vertical stacking; this just fades out in place.
+        delay(900)
+        alpha.animateTo(0f, tween(450))
         onFinish()
     }
 
@@ -907,7 +940,6 @@ private fun FlyingComboText(
         fontWeight = FontWeight.Black,
         letterSpacing = 2.sp,
         modifier = Modifier
-            .offset(y = offsetY.value.dp)
             .graphicsLayer {
                 scaleX = scale.value
                 scaleY = scale.value
@@ -917,11 +949,16 @@ private fun FlyingComboText(
 }
 
 @Composable
-private fun SwipeEdgeTab(onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun SwipeEdgeTab(
+    label: String,
+    fromLeft: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val transition = rememberInfiniteTransition(label = "edgeTab")
     val nudge by transition.animateFloat(
         initialValue = 0f,
-        targetValue = -4f,
+        targetValue = if (fromLeft) 4f else -4f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1200),
             repeatMode = RepeatMode.Reverse
@@ -931,21 +968,23 @@ private fun SwipeEdgeTab(onClick: () -> Unit, modifier: Modifier = Modifier) {
 
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(topStart = 14.dp, bottomStart = 14.dp),
+        shape = if (fromLeft) RoundedCornerShape(topEnd = 14.dp, bottomEnd = 14.dp)
+        else RoundedCornerShape(topStart = 14.dp, bottomStart = 14.dp),
         color = Primary.copy(alpha = 0.35f),
         modifier = modifier
             .offset(x = nudge.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp)
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 9.dp)
         ) {
             Icon(
-                imageVector = Icons.Default.ChevronLeft,
-                contentDescription = "Open sounds",
+                imageVector = if (fromLeft) Icons.Default.ChevronRight else Icons.Default.ChevronLeft,
+                contentDescription = "Open $label",
                 tint = Color.White.copy(alpha = 0.9f),
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(15.dp)
             )
+            Text(label, color = Color.White.copy(alpha = 0.78f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

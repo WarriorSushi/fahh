@@ -5,6 +5,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,6 +18,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VolumeDown
@@ -27,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,6 +63,14 @@ fun SidebarMenu(
     modifier: Modifier = Modifier
 ) {
     var fullLibraryOpen by rememberSaveable { mutableStateOf(false) }
+    var volumeExpanded by rememberSaveable { mutableStateOf(false) }
+    val supportPulseTransition = rememberInfiniteTransition(label = "supportPulse")
+    val supportPulse by supportPulseTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.035f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        label = "supportPulseScale"
+    )
     Box(
         modifier = modifier
             .fillMaxHeight()
@@ -188,80 +203,56 @@ fun SidebarMenu(
             if (showUtilityDock) Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF121A26))
+                    .background(Color(0xFF4A2028))
                     .padding(horizontal = 18.dp, vertical = 12.dp)
             ) {
-                Surface(
-                    onClick = onMySoundsClick,
-                    shape = RoundedCornerShape(14.dp),
-                    color = Color(0xFF202C3C),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp)
-                    ) {
-                        Text(text = "\uD83C\uDFA4", fontSize = 18.sp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Custom sounds", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text("Record and keep your own", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp)
-                        }
-                        Text("→", color = Primary, fontWeight = FontWeight.Bold)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Master Volume",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Primary.copy(alpha = 0.1f)
+                        onClick = onMySoundsClick,
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFF642C36),
+                        modifier = Modifier.weight(1f).height(56.dp)
                     ) {
-                        Text(
-                            text = "${(volume * 100).toInt()}%",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Primary,
-                            fontWeight = FontWeight.Black,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp)) {
+                            Icon(Icons.Default.Mic, contentDescription = "Custom sounds", tint = Color.White, modifier = Modifier.size(19.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Custom sounds", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
                     }
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.VolumeDown,
-                        contentDescription = "Low",
-                        tint = Color.White.copy(alpha = 0.35f),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Slider(
-                        value = volume,
-                        onValueChange = onVolumeChange,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 10.dp),
-                        colors = SliderDefaults.colors(
-                            thumbColor = Color.White,
-                            activeTrackColor = Primary,
-                            inactiveTrackColor = Color.White.copy(alpha = 0.08f)
-                        )
-                    )
-                    Icon(
-                        imageVector = Icons.Default.VolumeUp,
-                        contentDescription = "High",
-                        tint = Color.White.copy(alpha = 0.7f),
-                        modifier = Modifier.size(18.dp)
-                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        Surface(
+                            onClick = { volumeExpanded = !volumeExpanded },
+                            shape = RoundedCornerShape(14.dp),
+                            color = Color(0xFF642C36),
+                            modifier = Modifier.fillMaxWidth().height(56.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp)) {
+                                Icon(Icons.Default.VolumeUp, contentDescription = "Master volume", tint = Color.White, modifier = Modifier.size(19.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text("Volume", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Text("${(volume * 100).toInt()}%", color = Color.White.copy(alpha = 0.72f), fontSize = 10.sp)
+                                }
+                            }
+                        }
+                        DropdownMenu(
+                            expanded = volumeExpanded,
+                            onDismissRequest = { volumeExpanded = false }
+                        ) {
+                            Box(modifier = Modifier.size(width = 76.dp, height = 220.dp), contentAlignment = Alignment.Center) {
+                                Slider(
+                                    value = volume,
+                                    onValueChange = onVolumeChange,
+                                    modifier = Modifier.width(190.dp).graphicsLayer { rotationZ = -90f },
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = Color.White,
+                                        activeTrackColor = Primary,
+                                        inactiveTrackColor = Color.White.copy(alpha = 0.2f)
+                                    )
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -301,8 +292,12 @@ fun SidebarMenu(
                     Surface(
                         onClick = onTipJarClick,
                         shape = RoundedCornerShape(50),
-                        color = Color.White.copy(alpha = 0.06f),
-                        modifier = Modifier.weight(1f)
+                        color = Color(0xFFFFC857),
+                        shadowElevation = 8.dp,
+                        modifier = Modifier.weight(1f).graphicsLayer {
+                            scaleX = supportPulse
+                            scaleY = supportPulse
+                        }
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -312,13 +307,13 @@ fun SidebarMenu(
                             Text(
                                 text = "\u2615",
                                 fontSize = 14.sp,
-                                color = Color(0xFFFFD700)
+                                color = Color(0xFF28160A)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "Support Us",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFFFFD700).copy(alpha = 0.85f),
+                                color = Color(0xFF28160A),
                                 fontWeight = FontWeight.SemiBold
                             )
                         }

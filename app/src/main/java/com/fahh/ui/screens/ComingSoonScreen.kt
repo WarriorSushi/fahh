@@ -93,8 +93,8 @@ fun ComingSoonScreen(
             FeatureCard(
                 icon = Icons.Default.Palette,
                 iconTint = Color(0xFFE879F9),
-                title = "Button Skins",
-                description = "Customize your button with unique styles \u2014 arcade buttons, doorbells, nuclear launch buttons, and more. Each skin is unlockable."
+                title = "Button Skins, coming soon",
+                description = "Customize your button with unique styles: arcade buttons, doorbells, nuclear launch buttons, and more."
             )
 
             Spacer(modifier = Modifier.weight(1f))
