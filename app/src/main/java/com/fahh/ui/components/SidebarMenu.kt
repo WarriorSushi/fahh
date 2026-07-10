@@ -48,6 +48,11 @@ fun SidebarMenu(
     onMySoundsClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onTipJarClick: () -> Unit = {},
+    title: String = "Sounds",
+    subtitle: String = "Pick one, then hit Fahh",
+    showMoreSoundsAction: Boolean = true,
+    showUtilityDock: Boolean = true,
+    onOpenMoreSounds: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var fullLibraryOpen by rememberSaveable { mutableStateOf(false) }
@@ -86,13 +91,13 @@ fun SidebarMenu(
                 }
                 Column(modifier = Modifier.weight(1f).padding(start = 9.dp)) {
                     Text(
-                        text = if (fullLibraryOpen) "All sounds" else "Sounds",
+                        text = if (fullLibraryOpen) "All sounds" else title,
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White,
                         fontWeight = FontWeight.Black
                     )
                     Text(
-                        text = if (fullLibraryOpen) "Keep browsing, unlock when ready" else "Pick one, then hit Fahh",
+                        text = if (fullLibraryOpen) "Keep browsing, unlock when ready" else subtitle,
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.4f)
                     )
@@ -172,14 +177,15 @@ fun SidebarMenu(
                 selectedSound = selectedSound,
                 onSoundPreview = onSoundPreview,
                 onSoundSelected = onSoundSelected,
-                onMoreSoundsClick = if (fullLibraryOpen) null else ({ fullLibraryOpen = true }),
+                onMoreSoundsClick = if (showMoreSoundsAction && !fullLibraryOpen) ({
+                    onOpenMoreSounds?.invoke() ?: run { fullLibraryOpen = true }
+                }) else null,
                 modifier = Modifier.weight(1f)
             )
 
             Divider(color = Color.White.copy(alpha = 0.06f))
 
-            // Utility dock intentionally separates settings from sound discovery.
-            Column(
+            if (showUtilityDock) Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color(0xFF121A26))

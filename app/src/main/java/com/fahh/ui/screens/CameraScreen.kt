@@ -267,6 +267,25 @@ fun CameraScreen(
                     }
                 }
 
+                if (!isRecording) {
+                    Surface(
+                        onClick = { scope.launch { drawerState.open() } },
+                        shape = RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp),
+                        color = Color.Black.copy(alpha = 0.38f),
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 0.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(start = 8.dp, end = 6.dp, top = 8.dp, bottom = 8.dp)
+                        ) {
+                            Icon(Icons.Default.ChevronLeft, contentDescription = "Open sounds", tint = Color.White.copy(alpha = 0.65f), modifier = Modifier.size(16.dp))
+                            Text("Sounds", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
                 // Bottom Controls
                 Row(
                     modifier = Modifier

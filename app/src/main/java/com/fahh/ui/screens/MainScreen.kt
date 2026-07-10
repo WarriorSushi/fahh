@@ -47,6 +47,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.VideoLibrary
@@ -63,6 +64,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -95,6 +98,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import com.fahh.R
 import com.fahh.BuildConfig
+import com.fahh.data.catalog.SoundCatalog
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
@@ -134,9 +138,12 @@ fun MainScreen(
     viewModel: SoundViewModel
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val newSoundsDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
     val sounds by viewModel.allSounds.collectAsState()
+    val newSoundIds = remember { SoundCatalog.sounds.drop(12).map { it.id }.toSet() }
+    val newSounds = sounds.filter { it.id in newSoundIds }
     val selectedSound by viewModel.selectedSound.collectAsState()
     val volume by viewModel.volume.collectAsState()
     val streak by viewModel.streak.collectAsState()
@@ -194,9 +201,11 @@ fun MainScreen(
         )
     }
 
-    BackHandler(enabled = drawerState.isOpen) {
+    BackHandler(enabled = drawerState.isOpen || newSoundsDrawerState.isOpen) {
         if (showSettings) {
             showSettings = false
+        } else if (newSoundsDrawerState.isOpen) {
+            scope.launch { newSoundsDrawerState.close() }
         } else {
             scope.launch { drawerState.close() }
         }
@@ -316,7 +325,35 @@ fun MainScreen(
         )
     }
 
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        ModalNavigationDrawer(
+            drawerState = newSoundsDrawerState,
+            drawerContent = {
+                SidebarMenu(
+                    sounds = newSounds,
+                    selectedSound = selectedSound,
+                    volume = volume,
+                    onVolumeChange = { viewModel.updateVolume(it) },
+                    onSoundPreview = { sound -> viewModel.playSoundPreview(sound) },
+                    onSoundSelected = { sound ->
+                        if (sound.isLocked) soundToUnlock = sound
+                        else {
+                            viewModel.selectSound(sound)
+                            scope.launch { newSoundsDrawerState.close() }
+                        }
+                    },
+                    noticeMessage = null,
+                    onDismissNotice = {},
+                    onClose = { scope.launch { newSoundsDrawerState.close() } },
+                    onPrivacyClick = {},
+                    title = "New sounds",
+                    subtitle = "Fresh reactions, ready to unlock",
+                    showMoreSoundsAction = false,
+                    showUtilityDock = false
+                )
+            }
+        ) {
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
@@ -395,7 +432,13 @@ fun MainScreen(
                                     onMySoundsClick()
                                 },
                                 onSettingsClick = { showSettings = true },
-                                onTipJarClick = { showTipJarDialog = true }
+                                onTipJarClick = { showTipJarDialog = true },
+                                onOpenMoreSounds = {
+                                    scope.launch {
+                                        drawerState.close()
+                                        newSoundsDrawerState.open()
+                                    }
+                                }
                             )
                         }
                     }
@@ -417,6 +460,7 @@ fun MainScreen(
                     onCameraClick = onCameraClick,
                     onGalleryClick = onGalleryClick,
                     onMenuClick = { scope.launch { drawerState.open() } },
+                    onNewSoundsClick = { scope.launch { newSoundsDrawerState.open() } },
                     walkthroughStep = walkthroughStep,
                     onWalkthroughAdvance = {
                         walkthroughStep++
@@ -427,6 +471,8 @@ fun MainScreen(
                     }
                 )
             }
+        }
+        }
         }
     }
 }
@@ -443,6 +489,7 @@ private fun MainContent(
     onCameraClick: () -> Unit,
     onGalleryClick: () -> Unit,
     onMenuClick: () -> Unit,
+    onNewSoundsClick: () -> Unit,
     walkthroughStep: Int = -1,
     onWalkthroughAdvance: () -> Unit = {}
 ) {
@@ -502,6 +549,7 @@ private fun MainContent(
 
     // Get current rank label for top bar
     val currentRank = comboTiers.lastOrNull { it.index <= highestComboTier }
+    var achievementsExpanded by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -524,39 +572,59 @@ private fun MainContent(
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
-                    title = {
-                        Image(
-                            painter = painterResource(id = R.drawable.fahh_logo_wide),
-                            contentDescription = "Fahh",
-                            modifier = Modifier.height(44.dp)
-                        )
-                    },
-                    actions = {
-                        if (currentRank != null) {
-                            Surface(
-                                shape = RoundedCornerShape(50),
-                                color = currentRank.color.copy(alpha = 0.12f),
-                                modifier = Modifier.padding(end = 4.dp)
-                            ) {
-                                Text(
-                                    text = currentRank.label,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = currentRank.color,
-                                    letterSpacing = 0.5.sp,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(64.dp)
+                ) {
+                    IconButton(
+                        onClick = onGalleryClick,
+                        modifier = Modifier.align(Alignment.CenterStart).padding(start = 8.dp)
+                    ) {
+                        Icon(Icons.Default.PhotoLibrary, contentDescription = "Reaction gallery", tint = Color.White)
+                    }
+                    Image(
+                        painter = painterResource(id = R.drawable.fahh_logo_wide),
+                        contentDescription = "Fahh",
+                        modifier = Modifier.align(Alignment.Center).height(36.dp)
+                    )
+                    Box(modifier = Modifier.align(Alignment.CenterEnd).padding(end = 10.dp)) {
+                        Surface(
+                            onClick = { achievementsExpanded = true },
+                            shape = RoundedCornerShape(50),
+                            color = (currentRank?.color ?: Primary).copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                text = currentRank?.label ?: "ACHIEVEMENTS",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = currentRank?.color ?: Primary,
+                                letterSpacing = 0.5.sp,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = achievementsExpanded,
+                            onDismissRequest = { achievementsExpanded = false }
+                        ) {
+                            comboTiers.forEach { tier ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = if (tier.index <= highestComboTier) "✓ ${tier.label}" else "${tier.threshold} taps · ${tier.label}",
+                                            color = if (tier.index <= highestComboTier) tier.color else Color.White.copy(alpha = 0.55f),
+                                            fontSize = 12.sp
+                                        )
+                                    },
+                                    onClick = { achievementsExpanded = false }
                                 )
                             }
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
-                )
+                    }
+                }
             },
             bottomBar = {
                 FahhBottomBar(
                     onCameraClick = onCameraClick,
-                    onGalleryClick = onGalleryClick,
+                    onNewSoundsClick = onNewSoundsClick,
                     onMenuClick = onMenuClick
                 )
             }
@@ -759,7 +827,7 @@ private fun MainContent(
 @Composable
 private fun FahhBottomBar(
     onCameraClick: () -> Unit,
-    onGalleryClick: () -> Unit,
+    onNewSoundsClick: () -> Unit,
     onMenuClick: () -> Unit
 ) {
     NavigationBar(
@@ -768,23 +836,10 @@ private fun FahhBottomBar(
         tonalElevation = 0.dp
     ) {
         NavigationBarItem(
-            selected = true,
-            onClick = {},
-            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-            label = { Text("Home") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Primary,
-                selectedTextColor = Primary,
-                indicatorColor = Primary.copy(alpha = 0.12f),
-                unselectedIconColor = Color.White.copy(alpha = 0.6f),
-                unselectedTextColor = Color.White.copy(alpha = 0.6f)
-            )
-        )
-        NavigationBarItem(
             selected = false,
-            onClick = onGalleryClick,
-            icon = { Icon(Icons.Default.PhotoLibrary, contentDescription = "Reaction gallery") },
-            label = { Text("Gallery") },
+            onClick = onNewSoundsClick,
+            icon = { Icon(Icons.Default.NewReleases, contentDescription = "New sounds") },
+            label = { Text("New sounds") },
             colors = NavigationBarItemDefaults.colors(
                 unselectedIconColor = Color.White.copy(alpha = 0.6f),
                 unselectedTextColor = Color.White.copy(alpha = 0.6f)

@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.*
@@ -79,10 +80,11 @@ fun ComingSoonScreen(
 
             // Custom Sounds card
             FeatureCard(
-                icon = Icons.Default.MusicNote,
-                iconTint = Primary,
+                icon = Icons.Default.CheckCircle,
+                iconTint = Color(0xFF65D892),
                 title = "Custom Sounds",
-                description = "Upload your own audio clips and use them as reaction sounds. Record a friend's laugh, your pet's bark, or any sound under 5 seconds \u2014 and turn it into a reaction button."
+                description = "Already delivered as promised. Record and keep private reaction sounds directly on your device.",
+                delivered = true
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -135,7 +137,8 @@ private fun FeatureCard(
     icon: ImageVector,
     iconTint: Color,
     title: String,
-    description: String
+    description: String,
+    delivered: Boolean = false
 ) {
     Surface(
         color = Color.White.copy(alpha = 0.04f),
@@ -167,6 +170,15 @@ private fun FeatureCard(
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
+                if (delivered) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = "DELIVERED",
+                        color = Color(0xFF65D892),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(14.dp))
             Text(
