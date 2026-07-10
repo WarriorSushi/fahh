@@ -30,7 +30,7 @@ object VideoTrimUtils {
         } catch (_: Exception) { 0 }
 
         val extractor = MediaExtractor()
-        val muxer: MediaMuxer
+        var muxer: MediaMuxer? = null
 
         try {
             extractor.setDataSource(inputFile.absolutePath)
@@ -110,8 +110,9 @@ object VideoTrimUtils {
             }
 
             muxer.stop()
-            muxer.release()
         } finally {
+            runCatching { muxer?.stop() }
+            runCatching { muxer?.release() }
             runCatching { extractor.release() }
         }
     }

@@ -14,7 +14,6 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,7 +26,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
@@ -68,6 +69,7 @@ fun CameraScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
     val snackbarHostState = remember { SnackbarHostState() }
 
     val isRecording by cameraViewModel.isRecording.collectAsState()
@@ -78,6 +80,7 @@ fun CameraScreen(
     val cameraSelector by cameraViewModel.cameraSelector.collectAsState()
     val cameraPermissions = remember { requiredCameraPermissions() }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val lockedPreviewCounts = remember { mutableStateMapOf<Int, Int>() }
 
     var hasPermissions by remember { mutableStateOf(false) }
     var videoCapture by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
@@ -133,12 +136,24 @@ fun CameraScreen(
                     volume = volume,
                     onVolumeChange = { soundViewModel.updateVolume(it) },
                     onSoundPreview = { sound ->
-                        if (!sound.isLocked) soundViewModel.playSoundPreview(sound)
+                        if (!sound.isLocked) {
+                            soundViewModel.playSoundPreview(sound)
+                        } else {
+                            val count = lockedPreviewCounts.getOrDefault(sound.resId, 0)
+                            if (count < 2) {
+                                lockedPreviewCounts[sound.resId] = count + 1
+                                soundViewModel.playSoundPreview(sound)
+                            } else {
+                                scope.launch { snackbarHostState.showSnackbar("Previews finished. Open main screen to unlock.") }
+                            }
+                        }
                     },
                     onSoundSelected = { sound ->
                         if (!sound.isLocked) {
                             soundViewModel.selectSound(sound)
                             scope.launch { drawerState.close() }
+                        } else {
+                            scope.launch { snackbarHostState.showSnackbar("Open main screen to unlock sounds") }
                         }
                     },
                     noticeMessage = null,
@@ -264,19 +279,19 @@ fun CameraScreen(
                     // Record button — center
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Surface(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                if (isRecording) cameraViewModel.stopRecording()
+                                else videoCapture?.let {
+                                    cameraViewModel.startRecording(it, onVideoSaved, { msg ->
+                                        scope.launch { snackbarHostState.showSnackbar(msg) }
+                                    })
+                                }
+                            },
                             shape = CircleShape,
                             color = if (isRecording) Color.Transparent else Color.White,
                             border = if (isRecording) null else BorderStroke(4.dp, Color.Black.copy(alpha = 0.2f)),
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clickable {
-                                    if (isRecording) cameraViewModel.stopRecording()
-                                    else videoCapture?.let {
-                                        cameraViewModel.startRecording(it, onVideoSaved, { msg ->
-                                            scope.launch { snackbarHostState.showSnackbar(msg) }
-                                        })
-                                    }
-                                }
+                            modifier = Modifier.size(72.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 if (isRecording) {

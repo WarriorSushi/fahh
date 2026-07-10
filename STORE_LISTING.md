@@ -181,7 +181,7 @@ Make sure it looks good at 48x48 (how it appears in search results).
 
 2. Build final AAB:
    ```
-   FAHH_KEYSTORE_PASSWORD=fahhapp2026 FAHH_KEY_ALIAS=fahh FAHH_KEY_PASSWORD=fahhapp2026 ./gradlew bundleRelease
+   FAHH_KEYSTORE_PATH=<absolute-path-to-upload-keystore> FAHH_KEYSTORE_PASSWORD=<password> FAHH_KEY_ALIAS=<alias> FAHH_KEY_PASSWORD=<password> ./gradlew bundleRelease
    ```
 
 ### Play Console steps

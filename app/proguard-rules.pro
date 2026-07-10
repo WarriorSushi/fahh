@@ -41,6 +41,10 @@
 -dontwarn javax.annotation.**
 -dontwarn org.checkerframework.**
 
+# --- Google Play In-App Review ---
+-keep class com.google.android.play.core.** { *; }
+-dontwarn com.google.android.play.core.**
+
 # --- General Android ---
 -keepattributes *Annotation*
 -keepattributes SourceFile,LineNumberTable

@@ -41,20 +41,64 @@ class SoundViewModel @Inject constructor(
         initialValue = true // default true so walkthrough doesn't flash on existing users
     )
 
+    val watermarkEnabled = settingsRepository.watermarkEnabledFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true
+    )
+
+    val streak: StateFlow<Int> = settingsRepository.streakFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 0
+    )
+
+    val totalFahhCount: StateFlow<Int> = settingsRepository.totalFahhCountFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 0
+    )
+
+    val highestComboTier: StateFlow<Int> = settingsRepository.highestComboTierFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 0
+    )
+
     val isFirstRun = settingsRepository.isFirstRunFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = false
     )
 
+    /** Reads the actual DataStore value (not the stateIn initial). */
+    suspend fun isFirstRunResolved(): Boolean = settingsRepository.isFirstRunFlow.first()
+
     private val _selectedSound = MutableStateFlow(Sound("Fahh", R.raw.fahh, "F"))
     val selectedSound: StateFlow<Sound> = _selectedSound.asStateFlow()
 
+    /** Emits true when a rating prompt should be shown */
+    private val _showRatingPrompt = MutableStateFlow(false)
+    val showRatingPrompt: StateFlow<Boolean> = _showRatingPrompt.asStateFlow()
+
     init {
         viewModelScope.launch {
+            settingsRepository.recordDailyActivity()
             val existing = repository.allSounds.first()
             if (existing.isEmpty()) {
                 repository.insertAll(defaultSounds())
+            } else {
+                // Rename for existing users who have the old name
+                repository.renameSound("Romance Sax", "Romantic")
+            }
+            // Auto-select last used sound on launch
+            val lastName = settingsRepository.favoriteSoundFlow.first()
+            if (lastName != null) {
+                val sounds = repository.allSounds.first()
+                val lastSound = sounds.find { it.name == lastName && !it.isLocked }
+                if (lastSound != null) {
+                    _selectedSound.value = lastSound
+                }
             }
         }
     }
@@ -68,6 +112,16 @@ class SoundViewModel @Inject constructor(
     fun selectSound(sound: Sound) {
         if (!sound.isLocked) {
             _selectedSound.value = sound
+            // Persist last selected sound so app opens with it
+            viewModelScope.launch {
+                settingsRepository.setFavoriteSound(sound.name)
+            }
+        }
+    }
+
+    fun updateHighestComboTier(tier: Int) {
+        viewModelScope.launch {
+            settingsRepository.setHighestComboTier(tier)
         }
     }
 
@@ -83,8 +137,18 @@ class SoundViewModel @Inject constructor(
         }
     }
 
+    fun setWatermarkEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setWatermarkEnabled(enabled)
+        }
+    }
+
     fun playSelectedSound() {
         soundManager.playSound(_selectedSound.value.resId, volume.value)
+        viewModelScope.launch {
+            settingsRepository.incrementTotalFahhCount()
+            checkSoundPlayMilestone()
+        }
     }
 
     fun playSoundPreview(sound: Sound) {
@@ -100,6 +164,7 @@ class SoundViewModel @Inject constructor(
     fun unlockSound(soundName: String) {
         viewModelScope.launch {
             repository.unlockSound(soundName)
+            checkUnlockMilestone()
         }
     }
 
@@ -119,9 +184,45 @@ class SoundViewModel @Inject constructor(
         }
     }
 
+    /** Call after a successful share */
+    fun onShareCompleted() {
+        viewModelScope.launch {
+            val count = settingsRepository.incrementShareCount()
+            if (count == 3) maybeShowRating()
+        }
+    }
+
+    /** Check if sound play count hit a milestone (20th play for soundboard-only users) */
+    private suspend fun checkSoundPlayMilestone() {
+        val count = settingsRepository.incrementSoundPlayCount()
+        if (count == 20) maybeShowRating()
+    }
+
+    /** Check if unlock count hit a milestone (2nd unlock) */
+    private suspend fun checkUnlockMilestone() {
+        val count = settingsRepository.incrementUnlockCount()
+        if (count == 2) maybeShowRating()
+    }
+
+    /** Only show if user hasn't rated and hasn't dismissed too many times */
+    private suspend fun maybeShowRating() {
+        if (settingsRepository.hasRated()) return
+        if (settingsRepository.getRatingDismissCount() >= 3) return
+        _showRatingPrompt.value = true
+    }
+
+    fun onRatingAccepted() {
+        _showRatingPrompt.value = false
+        viewModelScope.launch { settingsRepository.setHasRated() }
+    }
+
+    fun onRatingDismissed() {
+        _showRatingPrompt.value = false
+        viewModelScope.launch { settingsRepository.incrementRatingDismissCount() }
+    }
+
     override fun onCleared() {
         super.onCleared()
-        soundManager.release()
     }
 
     private fun defaultSounds(): List<Sound> = listOf(
@@ -136,6 +237,6 @@ class SoundViewModel @Inject constructor(
         Sound("Sudden Suspense", R.raw.sudden_suspense, "S", isLocked = true, packName = "Reaction"),
         Sound("Yoooo Japan", R.raw.yoooooo_japan, "Y", isLocked = true, packName = "Chaos"),
         Sound("Gop Gop Gop", R.raw.gop_gop_gop, "G", isLocked = true, packName = "Chaos"),
-        Sound("Romance Sax", R.raw.romance_saxophone, "X", isLocked = true, packName = "Classic")
+        Sound("Romantic", R.raw.romance_saxophone, "X", isLocked = true, packName = "Classic")
     )
 }

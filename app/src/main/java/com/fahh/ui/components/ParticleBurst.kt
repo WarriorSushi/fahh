@@ -8,7 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import java.util.*
+import kotlin.random.Random
 
 data class Particle(
     val x: Float,
@@ -28,21 +28,21 @@ fun ParticleBurst(
     if (!trigger) return
 
     val particles = remember { mutableStateListOf<Particle>() }
-    val random = remember { Random() }
+    val random = remember { Random }
     val primaryColor = MaterialTheme.colorScheme.primary
     val progress = remember { Animatable(0f) }
 
     LaunchedEffect(trigger) {
         particles.clear()
         repeat(30) {
-            val angle = random.nextFloat() * 2 * Math.PI
+            val angle = random.nextFloat() * 2 * kotlin.math.PI
             val speed = random.nextFloat() * 15 + 5
             particles.add(
                 Particle(
                     x = 0f,
                     y = 0f,
-                    vx = (speed * Math.cos(angle)).toFloat(),
-                    vy = (speed * Math.sin(angle)).toFloat(),
+                    vx = (speed * kotlin.math.cos(angle)).toFloat(),
+                    vy = (speed * kotlin.math.sin(angle)).toFloat(),
                     color = primaryColor.copy(alpha = random.nextFloat() * 0.5f + 0.5f),
                     size = random.nextFloat() * 10 + 5
                 )

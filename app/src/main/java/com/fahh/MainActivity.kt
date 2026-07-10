@@ -11,10 +11,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.fahh.navigation.Screen
+import com.fahh.ui.components.RateUsDialog
 import com.fahh.ui.screens.*
 import com.fahh.ui.theme.FahhTheme
+import com.fahh.utils.ConsentManager
 import com.fahh.utils.ShareUtils
 import com.fahh.viewmodel.SoundViewModel
+import com.google.android.play.core.review.ReviewManagerFactory
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import kotlinx.coroutines.launch
@@ -37,124 +44,249 @@ class MainActivity : ComponentActivity() {
             })
         }
 
+        // Request GDPR/EEA consent before loading ads
+        ConsentManager.requestConsent(this) {
+            // Consent gathered or not required — ads can now load
+        }
+
         setContent {
             FahhTheme {
                 val soundViewModel: SoundViewModel = hiltViewModel()
-                val isFirstRun by soundViewModel.isFirstRun.collectAsState()
-                val startScreen = if (isFirstRun) "onboarding" else "main"
-                var currentScreen by remember { mutableStateOf(startScreen) }
-                var previousScreen by remember { mutableStateOf("main") }
+                val navController = rememberNavController()
+                val scope = rememberCoroutineScope()
+
                 var lastVideoFile by remember { mutableStateOf<File?>(null) }
+                val showRatingPrompt by soundViewModel.showRatingPrompt.collectAsState()
 
-                AnimatedContent(
-                    targetState = currentScreen,
-                    transitionSpec = {
-                        when {
-                            targetState == "camera" -> {
-                                (fadeIn(animationSpec = tween(400)) + scaleIn(initialScale = 0.85f))
-                                    .togetherWith(fadeOut(animationSpec = tween(400)) + scaleOut(targetScale = 1.1f))
+                // Wait for DataStore to resolve, then navigate once
+                LaunchedEffect(Unit) {
+                    val firstRun = soundViewModel.isFirstRunResolved()
+                    val startRoute = if (firstRun) Screen.Onboarding.route else Screen.Main.route
+                    navController.navigate(startRoute) {
+                        popUpTo(Screen.Loading.route) { inclusive = true }
+                    }
+                }
+
+                // Rating dialog — shown over any screen
+                if (showRatingPrompt) {
+                    RateUsDialog(
+                        onRate = {
+                            soundViewModel.onRatingAccepted()
+                            val reviewManager = ReviewManagerFactory.create(this@MainActivity)
+                            reviewManager.requestReviewFlow().addOnSuccessListener { reviewInfo ->
+                                reviewManager.launchReviewFlow(this@MainActivity, reviewInfo)
                             }
-                            initialState == "camera" && targetState == "main" -> {
-                                (fadeIn(animationSpec = tween(400)) + scaleIn(initialScale = 1.15f))
-                                    .togetherWith(fadeOut(animationSpec = tween(400)) + scaleOut(targetScale = 0.9f))
-                            }
-                            targetState == "ad_transition" -> {
-                                fadeIn(animationSpec = tween(400))
-                                    .togetherWith(fadeOut(animationSpec = tween(400)))
-                            }
-                            targetState == "share" || targetState == "trim" || targetState == "onboarding" -> {
-                                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(450))
-                                    .togetherWith(slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(450)))
-                            }
-                            initialState == "share" || initialState == "trim" || initialState == "onboarding" -> {
-                                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(450))
-                                    .togetherWith(slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(450)))
-                            }
-                            else -> {
-                                fadeIn(animationSpec = tween(500)) togetherWith fadeOut(animationSpec = tween(500))
-                            }
-                        }
-                    },
-                    label = "AppNavigation"
-                ) { state ->
-                    when (state) {
-                        "onboarding" -> OnboardingScreen(onFinish = {
+                        },
+                        onDismiss = { soundViewModel.onRatingDismissed() }
+                    )
+                }
+
+                // Slide transition helper
+                val slideLeft: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
+                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(450))
+                }
+                val slideOutLeft: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
+                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(450))
+                }
+                val slideRight: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
+                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(450))
+                }
+                val slideOutRight: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
+                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(450))
+                }
+
+                NavHost(
+                    navController = navController,
+                    startDestination = Screen.Loading.route,
+                    enterTransition = { fadeIn(tween(500)) },
+                    exitTransition = { fadeOut(tween(500)) }
+                ) {
+                    composable(Screen.Loading.route) {
+                        // Empty — splash screen is still visible
+                    }
+
+                    composable(
+                        Screen.Onboarding.route,
+                        enterTransition = slideLeft,
+                        exitTransition = slideOutLeft,
+                        popEnterTransition = slideRight,
+                        popExitTransition = slideOutRight
+                    ) {
+                        OnboardingScreen(onFinish = {
                             soundViewModel.completeOnboarding()
-                            currentScreen = "main"
+                            navController.navigate(Screen.Main.route) {
+                                popUpTo(Screen.Onboarding.route) { inclusive = true }
+                            }
                         })
+                    }
 
-                        "main" -> MainScreen(
+                    composable(Screen.Main.route) {
+                        MainScreen(
                             onCameraClick = {
-                                previousScreen = "main"
-                                currentScreen = "camera"
+                                navController.navigate(Screen.Camera.route)
                             },
                             onPrivacyClick = {
-                                previousScreen = "main"
-                                currentScreen = "privacy"
+                                navController.navigate(Screen.Privacy.route)
+                            },
+                            onComingSoonClick = {
+                                navController.navigate(Screen.ComingSoon.route)
+                            },
+                            onGalleryClick = {
+                                navController.navigate(Screen.Gallery.route)
                             },
                             viewModel = soundViewModel
                         )
+                    }
 
-                        "privacy" -> PrivacyPolicyScreen(
-                            onBack = { currentScreen = previousScreen }
+                    composable(
+                        Screen.Privacy.route,
+                        enterTransition = slideLeft,
+                        exitTransition = slideOutLeft,
+                        popEnterTransition = slideRight,
+                        popExitTransition = slideOutRight
+                    ) {
+                        PrivacyPolicyScreen(
+                            onBack = { navController.popBackStack() }
                         )
+                    }
 
-                        "camera" -> CameraScreen(
-                            onBack = { currentScreen = "main" },
+                    composable(
+                        Screen.ComingSoon.route,
+                        enterTransition = slideLeft,
+                        exitTransition = slideOutLeft,
+                        popEnterTransition = slideRight,
+                        popExitTransition = slideOutRight
+                    ) {
+                        ComingSoonScreen(
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable(
+                        Screen.Camera.route,
+                        enterTransition = {
+                            fadeIn(tween(400)) + scaleIn(initialScale = 0.85f)
+                        },
+                        exitTransition = {
+                            fadeOut(tween(400)) + scaleOut(targetScale = 1.1f)
+                        },
+                        popEnterTransition = {
+                            fadeIn(tween(400)) + scaleIn(initialScale = 1.15f)
+                        },
+                        popExitTransition = {
+                            fadeOut(tween(400)) + scaleOut(targetScale = 0.9f)
+                        }
+                    ) {
+                        CameraScreen(
+                            onBack = { navController.popBackStack() },
                             onVideoSaved = { file ->
                                 lastVideoFile = file
-                                previousScreen = "camera"
-                                kotlinx.coroutines.MainScope().launch {
+                                scope.launch {
                                     val shouldShowAd = soundViewModel.onRecordingFinished()
-                                    currentScreen = if (shouldShowAd) "ad_transition" else "share"
+                                    if (shouldShowAd) {
+                                        navController.navigate(Screen.AdTransition.route)
+                                    } else {
+                                        navController.navigate(Screen.Share.route)
+                                    }
                                 }
                             },
                             soundViewModel = soundViewModel
                         )
+                    }
 
-                        "ad_transition" -> AdTransitionScreen(
-                            onFinished = { currentScreen = "share" }
+                    composable(
+                        Screen.AdTransition.route,
+                        enterTransition = { fadeIn(tween(400)) },
+                        exitTransition = { fadeOut(tween(400)) },
+                        popEnterTransition = { fadeIn(tween(400)) },
+                        popExitTransition = { fadeOut(tween(400)) }
+                    ) {
+                        AdTransitionScreen(
+                            onFinished = {
+                                navController.navigate(Screen.Share.route) {
+                                    popUpTo(Screen.AdTransition.route) { inclusive = true }
+                                }
+                            }
                         )
+                    }
 
-                        "share" -> {
-                            val context = LocalContext.current
-                            val file = lastVideoFile
-                            if (file == null) {
-                                currentScreen = "camera"
-                            } else {
-                                ShareScreen(
-                                    videoFile = file,
-                                    onBack = { currentScreen = previousScreen },
-                                    onShare = { ShareUtils.shareVideo(context, file) },
-                                    onTrim = { currentScreen = "trim" },
-                                    onDelete = {
-                                        runCatching { file.delete() }
-                                        lastVideoFile = null
-                                        currentScreen = previousScreen
-                                    }
-                                )
+                    composable(
+                        Screen.Share.route,
+                        enterTransition = slideLeft,
+                        exitTransition = slideOutLeft,
+                        popEnterTransition = slideRight,
+                        popExitTransition = slideOutRight
+                    ) {
+                        val context = LocalContext.current
+                        val file = lastVideoFile
+                        if (file == null) {
+                            LaunchedEffect(Unit) {
+                                navController.popBackStack()
                             }
+                        } else {
+                            ShareScreen(
+                                videoFile = file,
+                                onBack = { navController.popBackStack() },
+                                onShare = {
+                                    ShareUtils.shareVideo(context, file)
+                                    soundViewModel.onShareCompleted()
+                                },
+                                onTrim = {
+                                    navController.navigate(Screen.Trim.route)
+                                },
+                                onDelete = {
+                                    runCatching { file.delete() }
+                                    lastVideoFile = null
+                                    navController.popBackStack()
+                                }
+                            )
                         }
+                    }
 
-                        "trim" -> {
-                            val file = lastVideoFile
-                            if (file == null) {
-                                currentScreen = "share"
-                            } else {
-                                TrimScreen(
-                                    sourceFile = file,
-                                    onBack = { currentScreen = "share" },
-                                    onTrimmed = { trimmed ->
-                                        lastVideoFile = trimmed
-                                        currentScreen = "share"
-                                    }
-                                )
+                    composable(
+                        Screen.Trim.route,
+                        enterTransition = slideLeft,
+                        exitTransition = slideOutLeft,
+                        popEnterTransition = slideRight,
+                        popExitTransition = slideOutRight
+                    ) {
+                        val file = lastVideoFile
+                        if (file == null) {
+                            LaunchedEffect(Unit) {
+                                navController.popBackStack()
                             }
+                        } else {
+                            TrimScreen(
+                                sourceFile = file,
+                                onBack = { navController.popBackStack() },
+                                onTrimmed = { trimmed ->
+                                    lastVideoFile = trimmed
+                                    navController.popBackStack()
+                                }
+                            )
                         }
+                    }
+
+                    composable(
+                        Screen.Gallery.route,
+                        enterTransition = slideLeft,
+                        exitTransition = slideOutLeft,
+                        popEnterTransition = slideRight,
+                        popExitTransition = slideOutRight
+                    ) {
+                        val context = LocalContext.current
+                        GalleryScreen(
+                            onBack = { navController.popBackStack() },
+                            onShare = { file ->
+                                ShareUtils.shareVideo(context, file)
+                            },
+                            onDelete = { file ->
+                                runCatching { file.delete() }
+                            }
+                        )
                     }
                 }
             }
         }
     }
 }
-

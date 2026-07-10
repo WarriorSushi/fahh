@@ -19,4 +19,7 @@ interface SoundDao {
 
     @Query("UPDATE sounds SET isLocked = 0 WHERE name = :soundName")
     suspend fun unlockSound(soundName: String)
+
+    @Query("UPDATE sounds SET name = :newName WHERE name = :oldName")
+    suspend fun renameSound(oldName: String, newName: String)
 }

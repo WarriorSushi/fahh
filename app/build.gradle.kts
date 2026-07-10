@@ -5,6 +5,21 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
+val releaseKeystorePath = System.getenv("FAHH_KEYSTORE_PATH")
+val releaseKeystorePassword = System.getenv("FAHH_KEYSTORE_PASSWORD")
+val releaseKeyAlias = System.getenv("FAHH_KEY_ALIAS")
+val releaseKeyPassword = System.getenv("FAHH_KEY_PASSWORD")
+val releaseBuildRequested = gradle.startParameter.taskNames.any {
+    it.contains("release", ignoreCase = true)
+}
+
+if (releaseBuildRequested) {
+    require(!releaseKeystorePath.isNullOrBlank()) { "FAHH_KEYSTORE_PATH must be set for release builds." }
+    require(!releaseKeystorePassword.isNullOrBlank()) { "FAHH_KEYSTORE_PASSWORD must be set for release builds." }
+    require(!releaseKeyAlias.isNullOrBlank()) { "FAHH_KEY_ALIAS must be set for release builds." }
+    require(!releaseKeyPassword.isNullOrBlank()) { "FAHH_KEY_PASSWORD must be set for release builds." }
+}
+
 android {
     namespace = "com.fahh"
     compileSdk = 35
@@ -13,8 +28,8 @@ android {
         applicationId = "com.fahh"
         minSdk = 24
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 7
+        versionName = "1.0.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -24,11 +39,10 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystorePath = System.getenv("FAHH_KEYSTORE_PATH") ?: "fahh-release.jks"
-            storeFile = file(keystorePath)
-            storePassword = System.getenv("FAHH_KEYSTORE_PASSWORD") ?: ""
-            keyAlias = System.getenv("FAHH_KEY_ALIAS") ?: "fahh"
-            keyPassword = System.getenv("FAHH_KEY_PASSWORD") ?: ""
+            storeFile = file(releaseKeystorePath ?: "missing-release-keystore")
+            storePassword = releaseKeystorePassword.orEmpty()
+            keyAlias = releaseKeyAlias.orEmpty()
+            keyPassword = releaseKeyPassword.orEmpty()
         }
     }
 
@@ -78,7 +92,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     
     // CameraX
-    val camerax_version = "1.3.1"
+    val camerax_version = "1.5.3"
     implementation("androidx.camera:camera-core:${camerax_version}")
     implementation("androidx.camera:camera-camera2:${camerax_version}")
     implementation("androidx.camera:camera-lifecycle:${camerax_version}")
@@ -101,13 +115,24 @@ dependencies {
     // For Kotlin Symbol Processing (KSP) which is preferred but for simplicity I'll use kapt or processor
     // Since I don't have KSP/Kapt set up in the plugins, I'll add kapt
     
+    // Navigation Compose
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+
     // Hilt
     implementation("com.google.dagger:hilt-android:2.48")
     kapt("com.google.dagger:hilt-android-compiler:2.48")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
     
     // AdMob
-    implementation("com.google.android.gms:play-services-ads:22.6.0")
+    implementation("com.google.android.gms:play-services-ads:23.6.0")
+
+    // User Messaging Platform (GDPR/EEA consent)
+    implementation("com.google.android.ump:user-messaging-platform:3.1.0")
+
+    // In-App Review
+    implementation("com.google.android.play:review-ktx:2.0.1")
+
+
 
     // Material Components for XML Themes
     implementation("com.google.android.material:material:1.11.0")
@@ -116,6 +141,8 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("io.mockk:mockk:1.13.10")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation(platform("androidx.compose:compose-bom:2023.10.01"))

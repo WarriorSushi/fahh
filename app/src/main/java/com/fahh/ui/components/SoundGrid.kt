@@ -51,6 +51,7 @@ fun SoundGrid(
             SoundTile(
                 sound = sound,
                 isSelected = sound == selectedSound,
+                isRecentlyUnlocked = !sound.isLocked && sound.packName != "Free",
                 onPreview = { onSoundPreview(sound) },
                 onSelect = { onSoundSelected(sound) }
             )
@@ -67,6 +68,7 @@ fun SoundGrid(
                 SoundTile(
                     sound = sound,
                     isSelected = sound == selectedSound,
+                    isRecentlyUnlocked = false,
                     onPreview = { onSoundPreview(sound) },
                     onSelect = { onSoundSelected(sound) }
                 )
@@ -79,6 +81,7 @@ fun SoundGrid(
 private fun SoundTile(
     sound: Sound,
     isSelected: Boolean,
+    isRecentlyUnlocked: Boolean,
     onPreview: () -> Unit,
     onSelect: () -> Unit
 ) {
@@ -135,17 +138,37 @@ private fun SoundTile(
 
             // Content
             Column(modifier = Modifier.fillMaxSize()) {
-                // Sound name
-                Text(
-                    text = sound.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (sound.isLocked) Color.White.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.95f),
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontSize = 13.sp,
+                // Sound name row
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(end = 36.dp)
-                )
+                ) {
+                    Text(
+                        text = sound.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (sound.isLocked) Color.White.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.95f),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 13.sp,
+                        modifier = if (!sound.isLocked) Modifier.padding(start = 22.dp) else Modifier
+                    )
+                    if (isRecentlyUnlocked) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Surface(
+                            shape = RoundedCornerShape(3.dp),
+                            color = Color(0xFF22C55E).copy(alpha = 0.2f)
+                        ) {
+                            Text(
+                                text = "NEW",
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF22C55E),
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(4.dp))
 

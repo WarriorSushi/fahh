@@ -63,7 +63,7 @@ Min SDK 24 · Target SDK 35 · ~10 MB
 ./gradlew assembleDebug
 
 # Release AAB (requires signing env vars)
-FAHH_KEYSTORE_PASSWORD=<pass> FAHH_KEY_ALIAS=<alias> FAHH_KEY_PASSWORD=<pass> ./gradlew bundleRelease
+FAHH_KEYSTORE_PATH=<absolute-path-to-upload-keystore> FAHH_KEYSTORE_PASSWORD=<password> FAHH_KEY_ALIAS=<alias> FAHH_KEY_PASSWORD=<password> ./gradlew bundleRelease
 ```
 
 ---

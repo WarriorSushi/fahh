@@ -30,25 +30,22 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
     }
 
     private fun preloadSounds() {
-        val sounds = listOf(
-            R.raw.air_horn,
-            R.raw.bruh,
-            R.raw.directed_by,
-            R.raw.dun_dun_dunn,
+        // Only preload the 4 free sounds; others load on demand
+        val freeSounds = listOf(
             R.raw.fahh,
-            R.raw.gop_gop_gop,
-            R.raw.oh_my_god_wow,
-            R.raw.romance_saxophone,
-            R.raw.sudden_suspense,
+            R.raw.bruh,
             R.raw.vine_boom,
-            R.raw.wow,
-            R.raw.yoooooo_japan
+            R.raw.wow
         )
-        
-        sounds.forEach { resId ->
-            val soundId = soundPool.load(context, resId, 1)
-            soundMap[resId] = soundId
+
+        freeSounds.forEach { resId ->
+            loadSound(resId)
         }
+    }
+
+    private fun loadSound(resId: Int) {
+        val soundId = soundPool.load(context, resId, 1)
+        soundMap[resId] = soundId
     }
 
     fun playSound(resId: Int, volume: Float = 1.0f) {
@@ -56,7 +53,13 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
         if (soundId != null && soundId != 0) {
             soundPool.play(soundId, volume, volume, 1, 0, 1.0f)
         } else {
-            Log.e("SoundManager", "Sound not loaded for resource ID: $resId")
+            // Load on demand then play after a short delay
+            loadSound(resId)
+            soundPool.setOnLoadCompleteListener { _, sampleId, status ->
+                if (status == 0) {
+                    soundPool.play(sampleId, volume, volume, 1, 0, 1.0f)
+                }
+            }
         }
     }
 

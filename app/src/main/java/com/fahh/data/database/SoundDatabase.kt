@@ -19,7 +19,7 @@ abstract class SoundDatabase : RoomDatabase() {
                     context.applicationContext,
                     SoundDatabase::class.java,
                     "fahh_database"
-                ).build()
+                ).fallbackToDestructiveMigration().build()
                 INSTANCE = instance
                 instance
             }

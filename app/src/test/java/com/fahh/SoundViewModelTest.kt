@@ -1,31 +1,53 @@
 package com.fahh
 
 import android.app.Application
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.fahh.data.model.Sound
+import com.fahh.data.repository.SettingsRepository
+import com.fahh.data.repository.SoundRepository
+import com.fahh.audio.SoundManager
 import com.fahh.viewmodel.SoundViewModel
-import io.mockk.*
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.*
-import org.junit.*
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
 import org.junit.Assert.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SoundViewModelTest {
 
-    @get:Rule
-    val instantExecutorRule = InstantTaskExecutorRule()
-
     private lateinit var viewModel: SoundViewModel
     private val application = mockk<Application>(relaxed = true)
+    private val soundRepository = mockk<SoundRepository>(relaxed = true)
+    private val soundManager = mockk<SoundManager>(relaxed = true)
+    private val settingsRepository = mockk<SettingsRepository>(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        // Note: Real DB would be mocked in a more complex setup
-        viewModel = SoundViewModel(application)
+        every { soundRepository.allSounds } returns flowOf(emptyList())
+        every { settingsRepository.volumeFlow } returns flowOf(1.0f)
+        every { settingsRepository.walkthroughDoneFlow } returns flowOf(true)
+        every { settingsRepository.watermarkEnabledFlow } returns flowOf(true)
+        every { settingsRepository.streakFlow } returns flowOf(0)
+        every { settingsRepository.totalFahhCountFlow } returns flowOf(0)
+        every { settingsRepository.highestComboTierFlow } returns flowOf(0)
+        every { settingsRepository.isFirstRunFlow } returns flowOf(false)
+        every { settingsRepository.favoriteSoundFlow } returns flowOf(null)
+
+        viewModel = SoundViewModel(
+            application,
+            soundRepository,
+            soundManager,
+            settingsRepository
+        )
     }
 
     @After

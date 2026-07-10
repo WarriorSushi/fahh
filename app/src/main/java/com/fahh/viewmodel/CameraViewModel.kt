@@ -23,7 +23,9 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -119,16 +121,20 @@ class CameraViewModel @Inject constructor(
                                     return@start
                                 }
 
-                                val copiedToGallery = copyRecordingToGallery(outputFile)
-                                if (!copiedToGallery) {
-                                    MediaScannerConnection.scanFile(
-                                        getApplication(),
-                                        arrayOf(outputFile.absolutePath),
-                                        arrayOf("video/mp4"),
-                                        null
-                                    )
-                                }
                                 onVideoSaved(outputFile)
+                                viewModelScope.launch(Dispatchers.IO) {
+                                    val copiedToGallery = copyRecordingToGallery(outputFile)
+                                    if (!copiedToGallery) {
+                                        withContext(Dispatchers.Main) {
+                                            MediaScannerConnection.scanFile(
+                                                getApplication(),
+                                                arrayOf(outputFile.absolutePath),
+                                                arrayOf("video/mp4"),
+                                                null
+                                            )
+                                        }
+                                    }
+                                }
                             } else {
                                 onError("Recording failed (code ${recordEvent.error}). Please try again.")
                             }
@@ -149,13 +155,7 @@ class CameraViewModel @Inject constructor(
     }
 
     fun stopRecording() {
-        try {
-            currentRecording?.stop()
-        } finally {
-            currentRecording = null
-            stopTimer()
-            _isRecording.value = false
-        }
+        currentRecording?.stop()
     }
 
     private fun getOutputDirectory(): File {

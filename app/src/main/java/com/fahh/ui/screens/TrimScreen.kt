@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,7 +31,6 @@ import com.fahh.utils.VideoTrimUtils
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -52,6 +52,7 @@ fun TrimScreen(
     var videoViewRef by remember { mutableStateOf<VideoView?>(null) }
     var isPlaying by remember { mutableStateOf(false) }
     var extraRotation by remember { mutableStateOf(0) } // 0, 90, 180, 270
+    val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize().background(Background)) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -201,7 +202,7 @@ fun TrimScreen(
             Button(
                 onClick = {
                     isSaving = true
-                    CoroutineScope(Dispatchers.Main).launch {
+                    scope.launch {
                         val startMs = (trimRange.start * 1000f).toLong()
                         val endMs = (trimRange.endInclusive * 1000f).toLong()
                         val outputDir = sourceFile.parentFile ?: sourceFile.absoluteFile.parentFile

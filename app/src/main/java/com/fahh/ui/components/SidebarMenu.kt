@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VolumeDown
 import androidx.compose.material.icons.filled.VolumeUp
@@ -22,6 +24,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.fahh.data.model.Sound
 import com.fahh.ui.theme.Primary
 
@@ -37,6 +40,8 @@ fun SidebarMenu(
     onDismissNotice: () -> Unit,
     onClose: () -> Unit,
     onPrivacyClick: () -> Unit,
+    onSettingsClick: () -> Unit = {},
+    onTipJarClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -161,7 +166,7 @@ fun SidebarMenu(
             Divider(color = Color.White.copy(alpha = 0.06f))
 
             // Volume control
-            Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 14.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Master Volume",
@@ -214,17 +219,65 @@ fun SidebarMenu(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                TextButton(
-                    onClick = onPrivacyClick,
+                // Settings + Tip Jar row
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        "Privacy & Terms",
-                        color = Color.White.copy(alpha = 0.45f),
-                        style = MaterialTheme.typography.labelSmall
-                    )
+                    Surface(
+                        onClick = onSettingsClick,
+                        shape = RoundedCornerShape(50),
+                        color = Color.White.copy(alpha = 0.06f),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(vertical = 10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Settings",
+                                tint = Color.White.copy(alpha = 0.6f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Settings",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    Surface(
+                        onClick = onTipJarClick,
+                        shape = RoundedCornerShape(50),
+                        color = Color.White.copy(alpha = 0.06f),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(vertical = 10.dp)
+                        ) {
+                            Text(
+                                text = "\u2615",
+                                fontSize = 14.sp,
+                                color = Color(0xFFFFD700)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Support Us",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFFFFD700).copy(alpha = 0.85f),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
             }
         }
