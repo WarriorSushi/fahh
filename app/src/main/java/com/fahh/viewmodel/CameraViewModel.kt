@@ -44,6 +44,10 @@ class CameraViewModel @Inject constructor(
     private val _isRecording = MutableStateFlow(false)
     val isRecording = _isRecording.asStateFlow()
 
+    /** True from Stop until the finished clip has been handed to the review flow. */
+    private val _isSavingRecording = MutableStateFlow(false)
+    val isSavingRecording = _isSavingRecording.asStateFlow()
+
     private val _recordingTimer = MutableStateFlow("00:00")
     val recordingTimer = _recordingTimer.asStateFlow()
 
@@ -91,6 +95,7 @@ class CameraViewModel @Inject constructor(
         val outputOptions = FileOutputOptions.Builder(outputFile).build()
 
         try {
+            _isSavingRecording.value = false
             _isRecording.value = true
             startTimer()
 
@@ -136,6 +141,7 @@ class CameraViewModel @Inject constructor(
                                     }
                                 }
                             } else {
+                                _isSavingRecording.value = false
                                 onError("Recording failed (code ${recordEvent.error}). Please try again.")
                             }
                         }
@@ -145,17 +151,22 @@ class CameraViewModel @Inject constructor(
             currentRecording = null
             stopTimer()
             _isRecording.value = false
+            _isSavingRecording.value = false
             onError("Camera and microphone permissions are required.")
         } catch (_: Exception) {
             currentRecording = null
             stopTimer()
             _isRecording.value = false
+            _isSavingRecording.value = false
             onError("Unable to start recording.")
         }
     }
 
     fun stopRecording() {
-        currentRecording?.stop()
+        if (currentRecording != null) {
+            _isSavingRecording.value = true
+            currentRecording?.stop()
+        }
     }
 
     private fun getOutputDirectory(): File {

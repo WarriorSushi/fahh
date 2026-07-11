@@ -74,6 +74,7 @@ fun CameraScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     val isRecording by cameraViewModel.isRecording.collectAsState()
+    val isSavingRecording by cameraViewModel.isSavingRecording.collectAsState()
     val timer by cameraViewModel.recordingTimer.collectAsState()
     val selectedSound by soundViewModel.selectedSound.collectAsState()
     val sounds by soundViewModel.allSounds.collectAsState()
@@ -117,7 +118,7 @@ fun CameraScreen(
         )
     }
 
-    BackHandler { onBack() }
+    BackHandler(enabled = !isSavingRecording) { onBack() }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -225,8 +226,12 @@ fun CameraScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                             }
                             Text(
-                                text = if (isRecording) timer else "RECORDING MODE",
-                                color = if (isRecording) Primary else Color.White,
+                                text = when {
+                                    isSavingRecording -> "SAVING"
+                                    isRecording -> timer
+                                    else -> "RECORDING MODE"
+                                },
+                                color = if (isRecording || isSavingRecording) Primary else Color.White,
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Black,
                                 letterSpacing = 1.sp
@@ -236,7 +241,7 @@ fun CameraScreen(
 
                     // Sounds drawer button (top right)
                     IconButton(
-                        onClick = { scope.launch { drawerState.open() } },
+                        onClick = { if (!isSavingRecording) scope.launch { drawerState.open() } },
                         modifier = Modifier
                             .premiumGlass(CircleShape, alpha = 0.1f)
                             .size(48.dp)
@@ -247,7 +252,7 @@ fun CameraScreen(
 
                 // Center Warning Hint (Subtle)
                 AnimatedVisibility(
-                    visible = !isRecording,
+                    visible = !isRecording && !isSavingRecording,
                     enter = fadeIn() + slideInVertically(),
                     exit = fadeOut() + slideOutVertically(),
                     modifier = Modifier.align(Alignment.Center).padding(bottom = 200.dp)
@@ -266,7 +271,7 @@ fun CameraScreen(
                     }
                 }
 
-                if (!isRecording) {
+                if (!isRecording && !isSavingRecording) {
                     Surface(
                         onClick = { scope.launch { drawerState.open() } },
                         shape = RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp),
@@ -286,9 +291,14 @@ fun CameraScreen(
                 }
 
                 // Bottom Controls
+                AnimatedVisibility(
+                    visible = !isSavingRecording,
+                    enter = fadeIn(tween(150)),
+                    exit = fadeOut(tween(150)),
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                ) {
                 Row(
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .padding(bottom = 32.dp, start = 24.dp, end = 24.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
@@ -349,6 +359,41 @@ fun CameraScreen(
                         onClick = { soundViewModel.playSelectedSound() },
                         buttonSize = 60.dp
                     )
+                }
+                }
+
+                AnimatedVisibility(
+                    visible = isSavingRecording,
+                    enter = fadeIn(tween(150)),
+                    exit = fadeOut(tween(150)),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(Color(0xA60D0F16)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Surface(
+                            color = Color(0xFF1C2634),
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier.padding(horizontal = 28.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = Primary,
+                                    strokeWidth = 3.dp
+                                )
+                                Spacer(Modifier.width(14.dp))
+                                Column {
+                                    Text("Saving your recording…", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                    Text("Getting it ready to review", color = Color.White.copy(alpha = 0.62f), fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         } else {
