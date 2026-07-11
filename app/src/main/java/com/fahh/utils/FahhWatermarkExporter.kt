@@ -24,7 +24,7 @@ class FahhWatermarkExporter(private val context: Context) {
         val settings = OverlaySettings.Builder()
             .setBackgroundFrameAnchor(0.94f, -0.93f)
             .setOverlayFrameAnchor(1f, -1f)
-            .setAlphaScale(0.56f)
+            .setAlphaScale(0.92f)
             .build()
         val overlay = BitmapOverlay.createStaticBitmapOverlay(logo, settings)
         val editedMediaItem = EditedMediaItem.Builder(MediaItem.fromUri(inputFile.toUri()))
@@ -52,9 +52,7 @@ class FahhWatermarkExporter(private val context: Context) {
     }
 
     private fun loadLogo(): Bitmap {
-        val source = requireNotNull(BitmapFactory.decodeResource(context.resources, R.drawable.fahh_logo_wide))
-        val targetWidth = 190
-        val targetHeight = (source.height * (targetWidth.toFloat() / source.width)).toInt().coerceAtLeast(1)
-        return Bitmap.createScaledBitmap(source, targetWidth, targetHeight, true)
+        // Preserve the 512×200 source wordmark so export keeps its edges crisp.
+        return requireNotNull(BitmapFactory.decodeResource(context.resources, R.drawable.fahh_logo_wide))
     }
 }
