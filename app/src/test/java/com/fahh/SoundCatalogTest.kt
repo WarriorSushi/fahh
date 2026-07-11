@@ -22,6 +22,16 @@ class SoundCatalogTest {
     }
 
     @Test
+    fun `first four new sounds are permanently free`() {
+        assertEquals(
+            setOf("buzzer", "chicken_scream", "core_effect", "crickets"),
+            SoundCatalog.permanentlyFreeNewSoundIds
+        )
+        val freeNewSounds = SoundCatalog.sounds.filter { it.id in SoundCatalog.permanentlyFreeNewSoundIds }
+        assertTrue(freeNewSounds.all { !it.isLocked })
+    }
+
+    @Test
     fun `intentionally removed staged sounds stay out of the bundled catalog`() {
         val forbiddenFragments = setOf(
             "another_one_dj_khaled",

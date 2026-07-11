@@ -9,6 +9,7 @@ import com.fahh.data.model.Sound
  */
 object SoundCatalog {
     const val VERSION = 2
+    private const val ORIGINAL_SOUND_COUNT = 12
 
     val sounds: List<Sound> = listOf(
         Sound("Fahh", R.raw.fahh, "F", isLocked = false, packName = "Free", id = "fahh"),
@@ -23,10 +24,10 @@ object SoundCatalog {
         Sound("Yoooo Japan", R.raw.yoooooo_japan, "Y", isLocked = true, packName = "Chaos", id = "yoooo_japan"),
         Sound("Gop Gop Gop", R.raw.gop_gop_gop, "G", isLocked = true, packName = "Chaos", id = "gop_gop_gop"),
         Sound("Romantic", R.raw.romance_saxophone, "X", isLocked = true, packName = "Classic", id = "romantic"),
-        Sound("Buzzer", R.raw.buzzer, "B", isLocked = true, packName = "Reaction", id = "buzzer"),
-        Sound("Chicken Scream", R.raw.chicken_on_tree_screaming, "C", isLocked = true, packName = "Chaos", id = "chicken_scream"),
-        Sound("Core Effect", R.raw.core_sound_effect, "C", isLocked = true, packName = "Reaction", id = "core_effect"),
-        Sound("Crickets", R.raw.crickets, "C", isLocked = true, packName = "Reaction", id = "crickets"),
+        Sound("Buzzer", R.raw.buzzer, "B", isLocked = false, packName = "Reaction", id = "buzzer"),
+        Sound("Chicken Scream", R.raw.chicken_on_tree_screaming, "C", isLocked = false, packName = "Chaos", id = "chicken_scream"),
+        Sound("Core Effect", R.raw.core_sound_effect, "C", isLocked = false, packName = "Reaction", id = "core_effect"),
+        Sound("Crickets", R.raw.crickets, "C", isLocked = false, packName = "Reaction", id = "crickets"),
         Sound("Door Knock", R.raw.door_knocking, "D", isLocked = true, packName = "Classic", id = "door_knock"),
         Sound("Drum Roll", R.raw.drum_roll, "D", isLocked = true, packName = "Classic", id = "drum_roll"),
         Sound("Emotional Damage", R.raw.emotional_damage, "E", isLocked = true, packName = "Reaction", id = "emotional_damage"),
@@ -48,6 +49,13 @@ object SoundCatalog {
         Sound("Why Are You Running", R.raw.why_are_you_running, "W", isLocked = true, packName = "Reaction", id = "why_are_you_running"),
         Sound("Womp Womp", R.raw.womp_womp_womp, "W", isLocked = true, packName = "Reaction", id = "womp_womp")
     )
+
+    /** The first four additions stay free for every user, including existing installs. */
+    val permanentlyFreeNewSoundIds: Set<String> = sounds
+        .drop(ORIGINAL_SOUND_COUNT)
+        .take(4)
+        .map { it.id }
+        .toSet()
 
     val defaultSelectedSound: Sound = sounds.first()
 }

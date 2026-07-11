@@ -29,6 +29,9 @@ class SoundRepository @Inject constructor(private val soundDao: SoundDao) {
                 packName = sound.packName
             )
         }
+        // A catalog-level free sound must be free for existing installs too, not only on
+        // first insertion. This never relocks sounds the user has already earned.
+        soundDao.unlockSounds(sounds.filterNot { it.isLocked }.map { it.id }.toSet())
     }
 
     suspend fun unlockPack(packName: String) {

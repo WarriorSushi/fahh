@@ -31,4 +31,7 @@ interface SoundDao {
 
     @Query("UPDATE sounds SET isLocked = 0 WHERE soundId = :soundId")
     suspend fun unlockSound(soundId: String)
+
+    @Query("UPDATE sounds SET isLocked = 0 WHERE soundId IN (:soundIds)")
+    suspend fun unlockSounds(soundIds: Set<String>)
 }
