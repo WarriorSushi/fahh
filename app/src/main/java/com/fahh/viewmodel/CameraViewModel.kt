@@ -17,13 +17,16 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewModelScope
 import com.fahh.camera.CameraManager
+import com.fahh.utils.FahhWatermarkExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,7 +36,8 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class CameraViewModel @Inject constructor(
     application: Application,
-    private val cameraManager: CameraManager
+    private val cameraManager: CameraManager,
+    private val watermarkExporter: FahhWatermarkExporter
 ) : AndroidViewModel(application) {
 
     private val _cameraSelector = MutableStateFlow(CameraSelector.DEFAULT_BACK_CAMERA)
@@ -42,8 +46,15 @@ class CameraViewModel @Inject constructor(
     private val _isRecording = MutableStateFlow(false)
     val isRecording = _isRecording.asStateFlow()
 
+    /** True from Stop until the finished clip has been handed to the review flow. */
+    private val _isSavingRecording = MutableStateFlow(false)
+    val isSavingRecording = _isSavingRecording.asStateFlow()
+
     private val _recordingTimer = MutableStateFlow("00:00")
     val recordingTimer = _recordingTimer.asStateFlow()
+
+    private val _savedVideo = MutableStateFlow<File?>(null)
+    val savedVideo = _savedVideo.asStateFlow()
 
     private var currentRecording: androidx.camera.video.Recording? = null
     private var timerJob: Job? = null
@@ -68,6 +79,7 @@ class CameraViewModel @Inject constructor(
     }
 
     fun toggleCamera() {
+        if (_isRecording.value || _isSavingRecording.value) return
         _cameraSelector.value = if (_cameraSelector.value == CameraSelector.DEFAULT_BACK_CAMERA) {
             CameraSelector.DEFAULT_FRONT_CAMERA
         } else {
@@ -77,18 +89,18 @@ class CameraViewModel @Inject constructor(
 
     fun startRecording(
         videoCapture: VideoCapture<Recorder>,
-        onVideoSaved: (File) -> Unit,
         onError: (String) -> Unit
     ) {
         if (_isRecording.value) return
 
-        val name = "fahh_" +
+        val timestamp =
             SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US).format(System.currentTimeMillis())
 
-        val outputFile = File(getOutputDirectory(), "$name.mp4")
+        val outputFile = File(getOutputDirectory(), "capture_$timestamp.mp4")
         val outputOptions = FileOutputOptions.Builder(outputFile).build()
 
         try {
+            _isSavingRecording.value = false
             _isRecording.value = true
             startTimer()
 
@@ -115,21 +127,15 @@ class CameraViewModel @Inject constructor(
                             if (!recordEvent.hasError()) {
                                 val isFileValid = outputFile.exists() && outputFile.length() > 4_096
                                 if (!isFileValid) {
+                                    _isSavingRecording.value = false
                                     onError("Recording failed. Output file was not created correctly.")
                                     return@start
                                 }
 
-                                val copiedToGallery = copyRecordingToGallery(outputFile)
-                                if (!copiedToGallery) {
-                                    MediaScannerConnection.scanFile(
-                                        getApplication(),
-                                        arrayOf(outputFile.absolutePath),
-                                        arrayOf("video/mp4"),
-                                        null
-                                    )
-                                }
-                                onVideoSaved(outputFile)
+                                _isSavingRecording.value = true
+                                exportAndPublishRecording(outputFile, timestamp)
                             } else {
+                                _isSavingRecording.value = false
                                 onError("Recording failed (code ${recordEvent.error}). Please try again.")
                             }
                         }
@@ -139,22 +145,28 @@ class CameraViewModel @Inject constructor(
             currentRecording = null
             stopTimer()
             _isRecording.value = false
+            _isSavingRecording.value = false
             onError("Camera and microphone permissions are required.")
         } catch (_: Exception) {
             currentRecording = null
             stopTimer()
             _isRecording.value = false
+            _isSavingRecording.value = false
             onError("Unable to start recording.")
         }
     }
 
     fun stopRecording() {
-        try {
+        if (currentRecording != null) {
+            _isSavingRecording.value = true
             currentRecording?.stop()
-        } finally {
-            currentRecording = null
-            stopTimer()
-            _isRecording.value = false
+        }
+    }
+
+    fun consumeSavedVideo(file: File) {
+        if (_savedVideo.value?.absolutePath == file.absolutePath) {
+            _savedVideo.value = null
+            _isSavingRecording.value = false
         }
     }
 
@@ -167,6 +179,40 @@ class CameraViewModel @Inject constructor(
             moviesDir
         } else {
             app.filesDir
+        }
+    }
+
+    private fun exportAndPublishRecording(sourceFile: File, timestamp: String) {
+        val brandedFile = File(getOutputDirectory(), "fahh_$timestamp.mp4")
+        watermarkExporter.export(
+            inputFile = sourceFile,
+            outputFile = brandedFile,
+            onSuccess = {
+                sourceFile.delete()
+                publishRecording(brandedFile)
+            },
+            onError = {
+                brandedFile.delete()
+                // A branding failure must never cost the user their recording.
+                publishRecording(sourceFile)
+            }
+        )
+    }
+
+    private fun publishRecording(file: File) {
+        _savedVideo.value = file
+        viewModelScope.launch(Dispatchers.IO) {
+            val copiedToGallery = copyRecordingToGallery(file)
+            if (!copiedToGallery) {
+                withContext(Dispatchers.Main) {
+                    MediaScannerConnection.scanFile(
+                        getApplication(),
+                        arrayOf(file.absolutePath),
+                        arrayOf("video/mp4"),
+                        null
+                    )
+                }
+            }
         }
     }
 

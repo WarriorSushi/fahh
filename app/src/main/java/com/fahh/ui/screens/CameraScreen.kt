@@ -14,7 +14,6 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,7 +26,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +62,7 @@ private fun requiredCameraPermissions(): Array<String> {
 @Composable
 fun CameraScreen(
     onBack: () -> Unit,
+    onCustomSoundsClick: () -> Unit,
     onVideoSaved: (File) -> Unit,
     soundViewModel: SoundViewModel,
     cameraViewModel: CameraViewModel = hiltViewModel()
@@ -68,16 +70,21 @@ fun CameraScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
     val snackbarHostState = remember { SnackbarHostState() }
 
     val isRecording by cameraViewModel.isRecording.collectAsState()
+    val isSavingRecording by cameraViewModel.isSavingRecording.collectAsState()
     val timer by cameraViewModel.recordingTimer.collectAsState()
+    val savedVideo by cameraViewModel.savedVideo.collectAsState()
     val selectedSound by soundViewModel.selectedSound.collectAsState()
     val sounds by soundViewModel.allSounds.collectAsState()
     val volume by soundViewModel.volume.collectAsState()
+    val soundPressCounts by soundViewModel.soundPressCounts.collectAsState()
     val cameraSelector by cameraViewModel.cameraSelector.collectAsState()
     val cameraPermissions = remember { requiredCameraPermissions() }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val lockedPreviewCounts = remember { mutableStateMapOf<Int, Int>() }
 
     var hasPermissions by remember { mutableStateOf(false) }
     var videoCapture by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
@@ -113,7 +120,22 @@ fun CameraScreen(
         )
     }
 
-    BackHandler { onBack() }
+    fun requestBack() {
+        when {
+            isRecording -> scope.launch { snackbarHostState.showSnackbar("Stop the recording before leaving.") }
+            isSavingRecording -> scope.launch { snackbarHostState.showSnackbar("Please wait while your recording is saved.") }
+            else -> onBack()
+        }
+    }
+
+    BackHandler { requestBack() }
+
+    LaunchedEffect(savedVideo) {
+        savedVideo?.let { file ->
+            onVideoSaved(file)
+            cameraViewModel.consumeSavedVideo(file)
+        }
+    }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -124,7 +146,7 @@ fun CameraScreen(
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
     ModalNavigationDrawer(
         drawerState = drawerState,
-        gesturesEnabled = !isRecording,
+        gesturesEnabled = true,
         drawerContent = {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                 SidebarMenu(
@@ -133,18 +155,39 @@ fun CameraScreen(
                     volume = volume,
                     onVolumeChange = { soundViewModel.updateVolume(it) },
                     onSoundPreview = { sound ->
-                        if (!sound.isLocked) soundViewModel.playSoundPreview(sound)
+                        if (!sound.isLocked) {
+                            soundViewModel.playSoundPreview(sound)
+                        } else {
+                            val count = lockedPreviewCounts.getOrDefault(sound.resId, 0)
+                            if (count < 2) {
+                                lockedPreviewCounts[sound.resId] = count + 1
+                                soundViewModel.playSoundPreview(sound)
+                            } else {
+                                scope.launch { snackbarHostState.showSnackbar("Previews finished. Open main screen to unlock.") }
+                            }
+                        }
                     },
                     onSoundSelected = { sound ->
                         if (!sound.isLocked) {
                             soundViewModel.selectSound(sound)
                             scope.launch { drawerState.close() }
+                        } else {
+                            scope.launch { snackbarHostState.showSnackbar("Open main screen to unlock sounds") }
                         }
                     },
                     noticeMessage = null,
                     onDismissNotice = {},
                     onClose = { scope.launch { drawerState.close() } },
-                    onPrivacyClick = {}
+                    onPrivacyClick = {},
+                    soundPressCounts = soundPressCounts,
+                    onMySoundsClick = {
+                        if (isRecording) {
+                            scope.launch { snackbarHostState.showSnackbar("Finish recording before changing custom sounds.") }
+                        } else {
+                            scope.launch { drawerState.close() }
+                            onCustomSoundsClick()
+                        }
+                    }
                 )
             }
         }
@@ -169,12 +212,13 @@ fun CameraScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .statusBarsPadding()
                         .padding(top = 16.dp, start = 16.dp, end = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
-                        onClick = onBack,
+                        onClick = ::requestBack,
                         modifier = Modifier
                             .premiumGlass(CircleShape, alpha = 0.1f)
                             .size(48.dp)
@@ -201,8 +245,12 @@ fun CameraScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                             }
                             Text(
-                                text = if (isRecording) timer else "RECORDING MODE",
-                                color = if (isRecording) Primary else Color.White,
+                                text = when {
+                                    isSavingRecording -> "SAVING"
+                                    isRecording -> timer
+                                    else -> "RECORDING MODE"
+                                },
+                                color = if (isRecording || isSavingRecording) Primary else Color.White,
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Black,
                                 letterSpacing = 1.sp
@@ -212,7 +260,7 @@ fun CameraScreen(
 
                     // Sounds drawer button (top right)
                     IconButton(
-                        onClick = { scope.launch { drawerState.open() } },
+                        onClick = { if (!isSavingRecording) scope.launch { drawerState.open() } },
                         modifier = Modifier
                             .premiumGlass(CircleShape, alpha = 0.1f)
                             .size(48.dp)
@@ -223,7 +271,7 @@ fun CameraScreen(
 
                 // Center Warning Hint (Subtle)
                 AnimatedVisibility(
-                    visible = !isRecording,
+                    visible = !isRecording && !isSavingRecording,
                     enter = fadeIn() + slideInVertically(),
                     exit = fadeOut() + slideOutVertically(),
                     modifier = Modifier.align(Alignment.Center).padding(bottom = 200.dp)
@@ -242,11 +290,36 @@ fun CameraScreen(
                     }
                 }
 
+                if (!isRecording && !isSavingRecording) {
+                    Surface(
+                        onClick = { scope.launch { drawerState.open() } },
+                        shape = RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp),
+                        color = Color.Black.copy(alpha = 0.38f),
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 0.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(start = 8.dp, end = 6.dp, top = 8.dp, bottom = 8.dp)
+                        ) {
+                            Icon(Icons.Default.ChevronLeft, contentDescription = "Open sounds", tint = Color.White.copy(alpha = 0.65f), modifier = Modifier.size(16.dp))
+                            Text("Sounds", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
                 // Bottom Controls
+                AnimatedVisibility(
+                    visible = !isSavingRecording,
+                    enter = fadeIn(tween(150)),
+                    exit = fadeOut(tween(150)),
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                ) {
                 Row(
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
                         .fillMaxWidth()
+                        .navigationBarsPadding()
                         .padding(bottom = 32.dp, start = 24.dp, end = 24.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
@@ -264,19 +337,19 @@ fun CameraScreen(
                     // Record button — center
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Surface(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                if (isRecording) cameraViewModel.stopRecording()
+                                else videoCapture?.let {
+                                    cameraViewModel.startRecording(it, { msg ->
+                                        scope.launch { snackbarHostState.showSnackbar(msg) }
+                                    })
+                                }
+                            },
                             shape = CircleShape,
                             color = if (isRecording) Color.Transparent else Color.White,
                             border = if (isRecording) null else BorderStroke(4.dp, Color.Black.copy(alpha = 0.2f)),
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clickable {
-                                    if (isRecording) cameraViewModel.stopRecording()
-                                    else videoCapture?.let {
-                                        cameraViewModel.startRecording(it, onVideoSaved, { msg ->
-                                            scope.launch { snackbarHostState.showSnackbar(msg) }
-                                        })
-                                    }
-                                }
+                            modifier = Modifier.size(72.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 if (isRecording) {
@@ -307,12 +380,52 @@ fun CameraScreen(
                         buttonSize = 60.dp
                     )
                 }
+                }
+
+                AnimatedVisibility(
+                    visible = isSavingRecording,
+                    enter = fadeIn(tween(150)),
+                    exit = fadeOut(tween(150)),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(Color(0xA60D0F16)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Surface(
+                            color = Color(0xFF1C2634),
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier.padding(horizontal = 28.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = Primary,
+                                    strokeWidth = 3.dp
+                                )
+                                Spacer(Modifier.width(14.dp))
+                                Column {
+                                    Text("Saving your recording…", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                    Text("Getting it ready to review", color = Color.White.copy(alpha = 0.62f), fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         } else {
             PermissionRequiredContent(onGrantClick = { permissionLauncher.launch(cameraPermissions) })
         }
 
-        SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+        )
     }
     } // CompositionLocalProvider Ltr
     } // ModalNavigationDrawer
@@ -341,4 +454,3 @@ private fun PermissionRequiredContent(onGrantClick: () -> Unit) {
         }
     }
 }
-

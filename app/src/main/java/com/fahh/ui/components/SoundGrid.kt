@@ -8,12 +8,14 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Divider
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalDensity
 import com.fahh.data.model.Sound
 import com.fahh.ui.theme.Primary
 
@@ -35,13 +38,17 @@ fun SoundGrid(
     selectedSound: Sound,
     onSoundPreview: (Sound) -> Unit,
     onSoundSelected: (Sound) -> Unit,
+    soundPressCounts: Map<String, Int> = emptyMap(),
+    onMoreSoundsClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val unlocked = sounds.filter { !it.isLocked }
     val locked = sounds.filter { it.isLocked }
 
+    val singleColumn = LocalDensity.current.fontScale >= 1.3f
+
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = GridCells.Fixed(if (singleColumn) 1 else 2),
         contentPadding = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -51,12 +58,36 @@ fun SoundGrid(
             SoundTile(
                 sound = sound,
                 isSelected = sound == selectedSound,
+                pressCount = soundPressCounts[sound.id] ?: 0,
                 onPreview = { onSoundPreview(sound) },
                 onSelect = { onSoundSelected(sound) }
             )
         }
+        if (onMoreSoundsClick != null) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Surface(
+                    onClick = onMoreSoundsClick,
+                    shape = RoundedCornerShape(14.dp),
+                    color = Primary,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 50.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("More sounds", color = Color.White, fontWeight = FontWeight.Black)
+                            Text("Browse the full sound library", color = Color.White.copy(alpha = 0.78f), fontSize = 11.sp)
+                        }
+                        Icon(Icons.Default.ArrowForward, contentDescription = "Browse more sounds", tint = Color.White)
+                    }
+                }
+            }
+        }
         if (locked.isNotEmpty()) {
-            item(span = { GridItemSpan(2) }) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 Divider(
                     color = Color.White.copy(alpha = 0.08f),
                     thickness = 1.dp,
@@ -65,8 +96,9 @@ fun SoundGrid(
             }
             itemsIndexed(locked) { _, sound ->
                 SoundTile(
-                    sound = sound,
-                    isSelected = sound == selectedSound,
+                sound = sound,
+                isSelected = sound == selectedSound,
+                pressCount = soundPressCounts[sound.id] ?: 0,
                     onPreview = { onSoundPreview(sound) },
                     onSelect = { onSoundSelected(sound) }
                 )
@@ -79,19 +111,20 @@ fun SoundGrid(
 private fun SoundTile(
     sound: Sound,
     isSelected: Boolean,
+    pressCount: Int,
     onPreview: () -> Unit,
     onSelect: () -> Unit
 ) {
     val tileColor = when {
         isSelected -> Primary.copy(alpha = 0.18f)
-        sound.isLocked -> Color.White.copy(alpha = 0.02f)
-        else -> Color.White.copy(alpha = 0.10f)
+        sound.isLocked -> Color(0xFF111722)
+        else -> Color(0xFF18202D)
     }
 
     val borderBrush = when {
         isSelected -> Brush.verticalGradient(listOf(Primary, Primary.copy(alpha = 0.4f)))
-        sound.isLocked -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.04f), Color.White.copy(alpha = 0.02f)))
-        else -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.12f), Color.White.copy(alpha = 0.05f)))
+        sound.isLocked -> Brush.verticalGradient(listOf(Color(0xFF283241), Color(0xFF161D28)))
+        else -> Brush.verticalGradient(listOf(Color(0xFF445166), Color(0xFF273343)))
     }
 
 
@@ -99,7 +132,7 @@ private fun SoundTile(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         modifier = Modifier
-            .height(120.dp)
+            .height(if (LocalDensity.current.fontScale >= 1.3f) 132.dp else 124.dp)
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onSelect)
             .border(
@@ -120,53 +153,69 @@ private fun SoundTile(
                 color = if (sound.isLocked) Color.White.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.14f),
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .size(32.dp)
+                    .size(48.dp)
                     .clickable(onClick = onPreview)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Preview",
+                        contentDescription = "Preview ${sound.name}",
                         tint = if (sound.isLocked) Color.White.copy(alpha = 0.35f) else Color.White.copy(alpha = 0.9f),
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
 
             // Content
             Column(modifier = Modifier.fillMaxSize()) {
-                // Sound name
-                Text(
-                    text = sound.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (sound.isLocked) Color.White.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.95f),
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(end = 36.dp)
-                )
+                // Sound name row
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(end = 52.dp)
+                ) {
+                    if (sound.filePath != null) {
+                        Icon(
+                            imageVector = Icons.Default.Mic,
+                            contentDescription = "Custom sound",
+                            tint = Primary,
+                            modifier = Modifier.size(15.dp).padding(end = 4.dp)
+                        )
+                    }
+                    Text(
+                        text = sound.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (sound.isLocked) Color.White.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.95f),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 13.sp,
+                        modifier = Modifier
+                    )
+                }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                // Keep the unlock label clear of the dedicated 48 dp preview target.
+                Spacer(modifier = Modifier.height(9.dp))
 
                 // Status badge
-                Surface(
-                    shape = RoundedCornerShape(5.dp),
-                    color = when {
-                        sound.isLocked -> Color(0xFFFF6B00).copy(alpha = 0.15f)
-                        isSelected -> Primary.copy(alpha = 0.2f)
-                        else -> Primary.copy(alpha = 0.1f)
+                Box(modifier = Modifier.fillMaxWidth().padding(end = 52.dp)) {
+                    Surface(
+                        shape = RoundedCornerShape(5.dp),
+                        color = when {
+                            sound.isLocked -> Color(0xFFFF6B00).copy(alpha = 0.15f)
+                            isSelected -> Primary.copy(alpha = 0.2f)
+                            else -> Primary.copy(alpha = 0.1f)
+                        }
+                    ) {
+                        Text(
+                            text = if (sound.isLocked) "1 AD TO UNLOCK" else if (isSelected) "ACTIVE" else "READY",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (sound.isLocked) Color(0xFFFF9D42) else Primary,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.5.sp,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                        )
                     }
-                ) {
-                    Text(
-                        text = if (sound.isLocked) "WATCH 1 AD TO UNLOCK" else if (isSelected) "ACTIVE" else "READY",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (sound.isLocked) Color(0xFFFF9D42) else Primary,
-                        fontSize = 7.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 0.5.sp,
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
-                    )
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -181,31 +230,34 @@ private fun SoundTile(
                         text = sound.packName.uppercase(),
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.45f),
-                        fontSize = 9.sp,
+                        fontSize = 10.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f)
                     )
 
-                    val statusIcon = when {
-                        sound.isLocked -> Icons.Default.Lock
-                        isSelected -> Icons.Default.Check
-                        else -> null
-                    }
-                    if (statusIcon != null) {
+                    if (!sound.isLocked) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isSelected) Primary.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.08f)
+                        ) {
+                            Text(
+                                text = "$pressCount presses",
+                                color = if (isSelected) Primary else Color.White.copy(alpha = 0.7f),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                            )
+                        }
+                    } else {
                         Surface(
                             shape = CircleShape,
-                            color = if (isSelected) Primary else Color.White.copy(alpha = 0.08f),
+                            color = Color.White.copy(alpha = 0.08f),
                             modifier = Modifier.size(22.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = statusIcon,
-                                    contentDescription = null,
-                                    tint = if (isSelected) Color.White else Color.White.copy(alpha = 0.4f),
-                                    modifier = Modifier.size(12.dp)
-                                )
+                                Icon(Icons.Default.Lock, null, tint = Color.White.copy(alpha = 0.4f), modifier = Modifier.size(12.dp))
                             }
                         }
                     }

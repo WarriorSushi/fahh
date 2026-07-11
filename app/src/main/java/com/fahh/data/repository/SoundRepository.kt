@@ -16,16 +16,31 @@ class SoundRepository @Inject constructor(private val soundDao: SoundDao) {
         entities.map { it.toModel() }
     }
 
-    suspend fun insertAll(sounds: List<Sound>) {
-        soundDao.insertAll(sounds.map { it.toEntity() })
+    /** Adds newly bundled sounds and refreshes metadata without relocking earned sounds. */
+    suspend fun syncCatalog(sounds: List<Sound>) {
+        val entries = sounds.map { it.toEntity() }
+        soundDao.removeCatalogSoundsNoLongerShipped(entries.map { it.soundId }.toSet())
+        soundDao.insertMissing(entries)
+        entries.forEach { sound ->
+            soundDao.updateCatalogMetadata(
+                soundId = sound.soundId,
+                name = sound.name,
+                resId = sound.resId,
+                icon = sound.icon,
+                packName = sound.packName
+            )
+        }
+        // A catalog-level free sound must be free for existing installs too, not only on
+        // first insertion. This never relocks sounds the user has already earned.
+        soundDao.unlockSounds(sounds.filterNot { it.isLocked }.map { it.id }.toSet())
     }
 
     suspend fun unlockPack(packName: String) {
         soundDao.unlockPack(packName)
     }
 
-    suspend fun unlockSound(soundName: String) {
-        soundDao.unlockSound(soundName)
+    suspend fun unlockSound(soundId: String) {
+        soundDao.unlockSound(soundId)
     }
 
     private fun SoundEntity.toModel() = Sound(
@@ -33,10 +48,12 @@ class SoundRepository @Inject constructor(private val soundDao: SoundDao) {
         resId = resId,
         icon = icon,
         isLocked = isLocked,
-        packName = packName
+        packName = packName,
+        id = soundId
     )
 
     private fun Sound.toEntity() = SoundEntity(
+        soundId = id,
         name = name,
         resId = resId,
         icon = icon,

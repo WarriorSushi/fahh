@@ -3,20 +3,33 @@ package com.fahh.ui.screens
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.Intent
+import android.net.Uri
+import android.os.SystemClock
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,15 +39,23 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -45,6 +66,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -58,7 +84,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -71,8 +98,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import com.fahh.R
+import com.fahh.BuildConfig
+import com.fahh.data.catalog.SoundCatalog
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
@@ -83,15 +113,19 @@ import com.fahh.ui.theme.Background
 import com.fahh.ui.theme.premiumGlass
 import com.fahh.data.model.Sound
 import com.fahh.ui.components.ConfettiCelebration
+import com.fahh.ui.components.SettingsSheet
 import com.fahh.ui.components.SidebarMenu
 import com.fahh.ui.components.SoundButton
 import com.fahh.utils.AdManager
+import com.fahh.utils.ConsentManager
+import com.fahh.utils.ShareUtils
 import com.fahh.viewmodel.SoundViewModel
 import com.google.android.gms.ads.rewarded.RewardedAd
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private const val RewardedAdUnitId = "ca-app-pub-1006057089920582/1635547968"
+private const val TestRewardedAdUnitId = "ca-app-pub-3940256099942544/5224354917"
+private const val ProductionRewardedAdUnitId = "ca-app-pub-1006057089920582/1635547968"
 
 private data class SidebarNotice(
     val token: Long,
@@ -103,14 +137,28 @@ private data class SidebarNotice(
 fun MainScreen(
     onCameraClick: () -> Unit,
     onPrivacyClick: () -> Unit,
+    onComingSoonClick: () -> Unit,
+    onGalleryClick: () -> Unit,
+    onMySoundsClick: () -> Unit,
+    showAdPrivacyOptions: Boolean,
+    onAdPrivacyClick: () -> Unit,
     viewModel: SoundViewModel
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val newSoundsDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
     val sounds by viewModel.allSounds.collectAsState()
+    val newSoundIds = remember { SoundCatalog.sounds.drop(12).map { it.id }.toSet() }
+    val newSounds = sounds.filter { it.id in newSoundIds }
+    val rightDrawerSounds = sounds.filter { it.id !in newSoundIds }
     val selectedSound by viewModel.selectedSound.collectAsState()
     val volume by viewModel.volume.collectAsState()
+    val streak by viewModel.streak.collectAsState()
+    val totalFahhCount by viewModel.totalFahhCount.collectAsState()
+    val soundPressCounts by viewModel.soundPressCounts.collectAsState()
+    val highestComboTier by viewModel.highestComboTier.collectAsState()
+    val newSoundsSeen by viewModel.newSoundsSeen.collectAsState()
 
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
@@ -118,6 +166,9 @@ fun MainScreen(
     val walkthroughDone by viewModel.walkthroughDone.collectAsState()
     // Walkthrough steps: 0 = "press the button", 1 = "feels good" meme, 2 = "more sounds →", -1 = done
     var walkthroughStep by remember { mutableStateOf(-1) }
+
+    var showSettings by remember { mutableStateOf(false) }
+    var showTipJarDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(walkthroughDone) {
         if (!walkthroughDone) {
@@ -131,7 +182,7 @@ fun MainScreen(
     var isRewardedAdLoading by remember { mutableStateOf(false) }
     var adErrorText by remember { mutableStateOf<String?>(null) }
     var sidebarNotice by remember { mutableStateOf<SidebarNotice?>(null) }
-    val lockedPreviewCounts = remember { mutableStateMapOf<Int, Int>() }
+    val lockedPreviewGate = remember { LockedSoundPreviewGate() }
 
     fun showSidebarNotice(message: String) {
         sidebarNotice = SidebarNotice(token = System.nanoTime(), message = message)
@@ -141,12 +192,31 @@ fun MainScreen(
         sidebarNotice = null
     }
 
+    fun previewSound(sound: Sound) {
+        if (!sound.isLocked) {
+            clearSidebarNotice()
+            viewModel.playSoundPreview(sound)
+            return
+        }
+
+        if (lockedPreviewGate.tryConsume(sound.id)) {
+            clearSidebarNotice()
+            viewModel.playSoundPreview(sound)
+        } else {
+            showSidebarNotice("Previews finished for ${sound.name}. Watch an ad to unlock.")
+        }
+    }
+
     fun loadRewardedAd() {
         if (isRewardedAdLoading || rewardedAd != null) return
+        if (!ConsentManager.canRequestAds(context)) {
+            adErrorText = "Ad privacy setup is not ready yet. Close this and try again shortly."
+            return
+        }
         isRewardedAdLoading = true
         AdManager.loadRewardedAd(
             context = context,
-            adUnitId = RewardedAdUnitId,
+            adUnitId = if (BuildConfig.DEBUG) TestRewardedAdUnitId else ProductionRewardedAdUnitId,
             onAdLoaded = { ad ->
                 rewardedAd = ad
                 isRewardedAdLoading = false
@@ -159,8 +229,19 @@ fun MainScreen(
         )
     }
 
-    BackHandler(enabled = drawerState.isOpen) {
-        scope.launch { drawerState.close() }
+    BackHandler(enabled = drawerState.isOpen || newSoundsDrawerState.isOpen) {
+        if (showSettings) {
+            showSettings = false
+        } else if (newSoundsDrawerState.isOpen) {
+            scope.launch { newSoundsDrawerState.close() }
+        } else {
+            scope.launch { drawerState.close() }
+        }
+    }
+
+    // Reset settings panel when drawer closes
+    LaunchedEffect(drawerState.isOpen) {
+        if (!drawerState.isOpen) showSettings = false
     }
 
     LaunchedEffect(Unit) { loadRewardedAd() }
@@ -178,9 +259,19 @@ fun MainScreen(
             containerColor = Color(0xFF161B22),
             titleContentColor = Color.White,
             textContentColor = Color.White.copy(alpha = 0.7f),
-            title = { Text("Unlock ${sound.packName} Pack", fontWeight = FontWeight.Bold) },
+            title = { Text("Unlock ${sound.name}", fontWeight = FontWeight.Bold) },
             text = {
-                Text("Watch a short rewarded ad to unlock this sound pack.")
+                Column {
+                    Text("Watch one short ad to unlock this sound permanently on this device.")
+                    adErrorText?.let { message ->
+                        Text(
+                            message,
+                            color = Color(0xFFFFB4AB),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 10.dp)
+                        )
+                    }
+                }
             },
             confirmButton = {
                 Button(
@@ -203,10 +294,11 @@ fun MainScreen(
                             activity = activity,
                             rewardedAd = ad,
                             onRewardEarned = {
-                                viewModel.unlockSound(sound.name)
+                                viewModel.unlockSound(sound.id)
                                 viewModel.selectSound(sound.copy(isLocked = false))
                                 showConfetti = true
                                 clearSidebarNotice()
+                                soundToUnlock = null
                             },
                             onDismissed = {
                                 soundToUnlock = null
@@ -237,65 +329,177 @@ fun MainScreen(
 
     ConfettiCelebration(trigger = showConfetti, onFinish = { showConfetti = false })
 
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+    // Tip Jar dialog
+    if (showTipJarDialog) {
+        AlertDialog(
+            onDismissRequest = { showTipJarDialog = false },
+            containerColor = Color(0xFF161B22),
+            titleContentColor = Color.White,
+            textContentColor = Color.White.copy(alpha = 0.7f),
+            title = { Text("You're the best \uD83E\uDEF6", fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "Your support keeps the memes alive and the lights on. Every coffee helps a small indie dev keep building weird, wonderful apps.\n\nTapping below will open Buy Me a Coffee \u2014 no pressure, just vibes."
+                )
+            },
+            confirmButton = {
+                Button(
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                    onClick = {
+                        showTipJarDialog = false
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://buymeacoffee.com/warriorsushi"))
+                        )
+                    }
+                ) {
+                    Text("Buy Me a Coffee \u2615", fontWeight = FontWeight.Bold, color = Color.Black)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTipJarDialog = false }) {
+                    Text("Maybe later", color = Color.White.copy(alpha = 0.35f))
+                }
+            }
+        )
+    }
+
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        ModalNavigationDrawer(
+            drawerState = newSoundsDrawerState,
+            drawerContent = {
+                SidebarMenu(
+                    sounds = newSounds,
+                    selectedSound = selectedSound,
+                    volume = volume,
+                    onVolumeChange = { viewModel.updateVolume(it) },
+                    onSoundPreview = ::previewSound,
+                    onSoundSelected = { sound ->
+                        if (sound.isLocked) soundToUnlock = sound
+                        else {
+                            viewModel.selectSound(sound)
+                            scope.launch { newSoundsDrawerState.close() }
+                        }
+                    },
+                    noticeMessage = sidebarNotice?.message,
+                    onDismissNotice = ::clearSidebarNotice,
+                    onClose = { scope.launch { newSoundsDrawerState.close() } },
+                    onPrivacyClick = {},
+                    soundPressCounts = soundPressCounts,
+                    title = "New sounds",
+                    subtitle = "Watch 1 ad to unlock a sound forever",
+                    showMoreSoundsAction = false,
+                    showUtilityDock = false
+                )
+            }
+        ) {
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                    SidebarMenu(
-                        sounds = sounds,
-                        selectedSound = selectedSound,
-                        volume = volume,
-                        onVolumeChange = { viewModel.updateVolume(it) },
-                        onSoundPreview = { sound ->
-                            if (!sound.isLocked) {
-                                clearSidebarNotice()
-                                viewModel.playSoundPreview(sound)
+                    AnimatedContent(
+                        targetState = showSettings,
+                        transitionSpec = {
+                            if (targetState) {
+                                (slideInHorizontally { it } + fadeIn()) togetherWith
+                                    (slideOutHorizontally { -it } + fadeOut())
                             } else {
-                                val usedPreviews = lockedPreviewCounts[sound.resId] ?: 0
-                                if (usedPreviews < 2) {
-                                    lockedPreviewCounts[sound.resId] = usedPreviews + 1
-                                    clearSidebarNotice()
-                                    viewModel.playSoundPreview(sound)
-                                } else {
-                                    showSidebarNotice("Previews finished for ${sound.name}. Watch an ad to unlock.")
-                                }
+                                (slideInHorizontally { -it } + fadeIn()) togetherWith
+                                    (slideOutHorizontally { it } + fadeOut())
                             }
                         },
-                        onSoundSelected = { sound ->
-                            if (sound.isLocked) {
-                                val usedPreviews = lockedPreviewCounts[sound.resId] ?: 0
-                                if (usedPreviews >= 2) {
-                                    showSidebarNotice("Watch an ad to unlock ${sound.name}.")
+                        label = "SidebarContent"
+                    ) { settingsVisible ->
+                        if (settingsVisible) {
+                            SettingsSheet(
+                                highestComboTier = highestComboTier,
+                                totalPresses = totalFahhCount,
+                                sounds = sounds,
+                                soundPressCounts = soundPressCounts,
+                                onShareText = { text -> ShareUtils.shareText(context, text, "Share Fahh stats") },
+                                onPrivacyClick = {
+                                    scope.launch { drawerState.close() }
+                                    showSettings = false
+                                    onPrivacyClick()
+                                },
+                                onComingSoonClick = {
+                                    scope.launch { drawerState.close() }
+                                    showSettings = false
+                                    onComingSoonClick()
+                                },
+                                showAdPrivacyOptions = showAdPrivacyOptions,
+                                onAdPrivacyClick = onAdPrivacyClick,
+                                onBack = { showSettings = false }
+                            )
+                        } else {
+                            SidebarMenu(
+                                sounds = rightDrawerSounds,
+                                selectedSound = selectedSound,
+                                volume = volume,
+                                onVolumeChange = { viewModel.updateVolume(it) },
+                                onSoundPreview = ::previewSound,
+                                onSoundSelected = { sound ->
+                                    if (sound.isLocked) {
+                                        if (lockedPreviewGate.usedPreviews(sound.id) >= LockedSoundPreviewGate.MAX_PREVIEWS) {
+                                            showSidebarNotice("Watch an ad to unlock ${sound.name}.")
+                                        }
+                                        soundToUnlock = sound
+                                    } else {
+                                        clearSidebarNotice()
+                                        viewModel.selectSound(sound)
+                                        scope.launch { drawerState.close() }
+                                    }
+                                },
+                                noticeMessage = sidebarNotice?.message,
+                                onDismissNotice = { clearSidebarNotice() },
+                                onClose = { scope.launch { drawerState.close() } },
+                                onPrivacyClick = {
+                                    scope.launch { drawerState.close() }
+                                    onPrivacyClick()
+                                },
+                                soundPressCounts = soundPressCounts,
+                                onMySoundsClick = {
+                                    scope.launch { drawerState.close() }
+                                    onMySoundsClick()
+                                },
+                                onSettingsClick = { showSettings = true },
+                                onTipJarClick = { showTipJarDialog = true },
+                                title = "Unlocked sounds",
+                                subtitle = "Your collection and original reactions",
+                                onOpenMoreSounds = {
+                                    viewModel.markNewSoundsSeen()
+                                    scope.launch {
+                                        drawerState.close()
+                                        delay(80)
+                                        newSoundsDrawerState.open()
+                                    }
                                 }
-                                soundToUnlock = sound
-                            } else {
-                                clearSidebarNotice()
-                                viewModel.selectSound(sound)
-                                scope.launch { drawerState.close() }
-                            }
-                        },
-                        noticeMessage = sidebarNotice?.message,
-                        onDismissNotice = { clearSidebarNotice() },
-                        onClose = { scope.launch { drawerState.close() } },
-                        onPrivacyClick = {
-                            scope.launch { drawerState.close() }
-                            onPrivacyClick()
+                            )
                         }
-                    )
+                    }
                 }
             }
         ) {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                 MainContent(
                     selectedSound = selectedSound,
+                    streak = streak,
+                    totalFahhCount = totalFahhCount,
+                    highestComboTier = highestComboTier,
+                    onComboTierUnlocked = { tier -> viewModel.updateHighestComboTier(tier) },
                     onPlayClick = {
                         clearSidebarNotice()
                         viewModel.playSelectedSound()
                         if (walkthroughStep == 0) walkthroughStep = 1
                     },
                     onCameraClick = onCameraClick,
+                    onGalleryClick = onGalleryClick,
                     onMenuClick = { scope.launch { drawerState.open() } },
+                    onNewSoundsClick = {
+                        viewModel.markNewSoundsSeen()
+                        scope.launch { newSoundsDrawerState.open() }
+                    },
+                    showNewSoundsPrompt = !newSoundsSeen,
                     walkthroughStep = walkthroughStep,
                     onWalkthroughAdvance = {
                         walkthroughStep++
@@ -307,6 +511,8 @@ fun MainScreen(
                 )
             }
         }
+        }
+        }
     }
 }
 
@@ -314,16 +520,116 @@ fun MainScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 private fun MainContent(
     selectedSound: Sound,
+    streak: Int,
+    totalFahhCount: Int,
+    highestComboTier: Int,
+    onComboTierUnlocked: (Int) -> Unit,
     onPlayClick: () -> Unit,
     onCameraClick: () -> Unit,
+    onGalleryClick: () -> Unit,
     onMenuClick: () -> Unit,
+    onNewSoundsClick: () -> Unit,
+    showNewSoundsPrompt: Boolean,
     walkthroughStep: Int = -1,
     onWalkthroughAdvance: () -> Unit = {}
 ) {
+    // A fixed three-second window starts on the first tap, then resets at its boundary.
+    val comboCounter = remember { ComboWindowCounter() }
+    var highestTierShown by remember { mutableIntStateOf(0) }
+    data class ComboCelebration(val id: Int, val label: String, val color: Color)
+    val celebrations = remember { mutableStateListOf<ComboCelebration>() }
+    var celebrationId by remember { mutableIntStateOf(0) }
+    val comboScope = rememberCoroutineScope()
+
+    // Tier definitions
+    data class ComboTier(val threshold: Int, val index: Int, val label: String, val color: Color)
+    val comboTiers = remember { listOf(
+        ComboTier(2, 1, "\u26A1 2x COMBO", Color(0xFF90CAF9)),
+        ComboTier(4, 2, "\uD83D\uDD25 4x COMBO", Color(0xFFFF9100)),
+        ComboTier(7, 3, "\uD83D\uDCA5 7x COMBO", Color(0xFFFFAB40)),
+        ComboTier(10, 4, "\uD83C\uDF1F 10x COMBO", Color(0xFFFFD740)),
+        ComboTier(15, 5, "\uD83D\uDC7E TAP MONSTER", Color(0xFF76FF03)),
+        ComboTier(17, 6, "\uD83E\uDD2F SPEED DEMON", Color(0xFFE040FB)),
+        ComboTier(20, 7, "\uD83D\uDC51 ULTRA LEGENDARY PRO", Color(0xFFFFD700)),
+        ComboTier(25, 8, "\uD83D\uDEA8 CHEATER", Color(0xFFFF1744)),
+        ComboTier(30, 9, "\uD83D\uDC80 FINGER GOD", Color(0xFFBB86FC)),
+        ComboTier(40, 10, "\uD83C\uDF00 DIMENSION BREAKER", Color(0xFF00E5FF)),
+        ComboTier(50, 11, "\uD83E\uDEE0 TOUCH GRASS", Color(0xFFFF4081)),
+        ComboTier(60, 12, "\uD83E\uDDE0 ARE YOU OK?", Color(0xFF00E676))
+    ) }
+
+    fun onButtonTap() {
+        val count = comboCounter.registerTap(SystemClock.elapsedRealtime())
+        if (count == 1) {
+            highestTierShown = 0
+            celebrations.clear()
+        }
+
+        val newlyReachedTier = comboTiers.firstOrNull { count == it.threshold }
+        if (newlyReachedTier != null && newlyReachedTier.index > highestTierShown) {
+            highestTierShown = newlyReachedTier.index
+            onComboTierUnlocked(newlyReachedTier.index)
+            celebrationId++
+            val item = ComboCelebration(
+                id = celebrationId,
+                label = newlyReachedTier.label,
+                color = newlyReachedTier.color
+            )
+            if (celebrations.size == 5) celebrations.removeAt(0)
+            celebrations.add(item)
+            comboScope.launch {
+                delay(4_000)
+                celebrations.removeAll { it.id == item.id }
+            }
+        }
+    }
+
+    // Get current rank label for top bar
+    val currentRank = comboTiers.lastOrNull { it.index <= highestComboTier }
+    var achievementsExpanded by remember { mutableStateOf(false) }
+    val achievementScale = remember { Animatable(1f) }
+    LaunchedEffect(currentRank?.index) {
+        if (currentRank != null) {
+            achievementScale.snapTo(0.92f)
+            achievementScale.animateTo(1.12f, spring(dampingRatio = 0.48f, stiffness = 680f))
+            achievementScale.animateTo(1f, tween(160))
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Background)
+            .pointerInput(Unit) {
+                var horizontalTravel = 0f
+                var drawerOpened = false
+                detectHorizontalDragGestures(
+                    onDragStart = {
+                        horizontalTravel = 0f
+                        drawerOpened = false
+                    },
+                    onHorizontalDrag = { _, dragAmount ->
+                        if (drawerOpened) return@detectHorizontalDragGestures
+                        horizontalTravel += dragAmount
+                        // The home screen has no horizontal content to protect. A deliberate
+                        // side swipe can therefore begin away from the physical screen edge.
+                        if (horizontalTravel >= 42.dp.toPx()) {
+                            onNewSoundsClick()
+                            drawerOpened = true
+                        } else if (horizontalTravel <= -42.dp.toPx()) {
+                            onMenuClick()
+                            drawerOpened = true
+                        }
+                    },
+                    onDragEnd = {
+                        horizontalTravel = 0f
+                        drawerOpened = false
+                    },
+                    onDragCancel = {
+                        horizontalTravel = 0f
+                        drawerOpened = false
+                    }
+                )
+            }
     ) {
         // Ambient background glow
         Box(
@@ -342,29 +648,71 @@ private fun MainContent(
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
-                    title = {
-                        Image(
-                            painter = painterResource(id = R.drawable.fahh_logo_wide),
-                            contentDescription = "Fahh",
-                            modifier = Modifier.height(44.dp)
-                        )
-                    },
-                    actions = {
-                        IconButton(
-                            onClick = onMenuClick,
-                            modifier = Modifier
-                                .padding(end = 8.dp)
-                                .premiumGlass(CircleShape, alpha = 0.05f)
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(64.dp)
+                ) {
+                    IconButton(
+                        onClick = onGalleryClick,
+                        modifier = Modifier.align(Alignment.CenterStart).padding(start = 8.dp)
+                    ) {
+                        Icon(Icons.Default.PhotoLibrary, contentDescription = "Reaction gallery", tint = Color.White)
+                    }
+                    Image(
+                        painter = painterResource(id = R.drawable.fahh_logo_wide),
+                        contentDescription = "Fahh",
+                        modifier = Modifier.align(Alignment.Center).height(36.dp)
+                    )
+                    Box(modifier = Modifier.align(Alignment.CenterEnd).padding(end = 10.dp)) {
+                        Surface(
+                            onClick = { achievementsExpanded = true },
+                            shape = RoundedCornerShape(50),
+                            color = (currentRank?.color ?: Primary).copy(alpha = 0.12f),
+                            border = BorderStroke(1.dp, (currentRank?.color ?: Primary).copy(alpha = 0.35f)),
+                            shadowElevation = 4.dp,
+                            modifier = Modifier.graphicsLayer {
+                                scaleX = achievementScale.value
+                                scaleY = achievementScale.value
+                            }
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.GridView,
-                                contentDescription = "Open sound menu",
-                                tint = Color.White
+                            Text(
+                                text = currentRank?.label ?: "ACHIEVEMENTS",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = currentRank?.color ?: Primary,
+                                letterSpacing = 0.5.sp,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
                             )
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                        DropdownMenu(
+                            expanded = achievementsExpanded,
+                            onDismissRequest = { achievementsExpanded = false }
+                        ) {
+                            comboTiers.forEach { tier ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = if (tier.index <= highestComboTier) "✓ ${tier.label}" else "${tier.threshold} taps · ${tier.label}",
+                                            color = if (tier.index <= highestComboTier) tier.color else Color.White.copy(alpha = 0.55f),
+                                            fontSize = 12.sp
+                                        )
+                                    },
+                                    onClick = { achievementsExpanded = false }
+                                )
+                            }
+                            DropdownMenuItem(
+                                text = { Text("The first tap starts a fixed 3-second combo window.", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp) },
+                                onClick = { achievementsExpanded = false }
+                            )
+                        }
+                    }
+                }
+            },
+            bottomBar = {
+                FahhBottomBar(
+                    onCameraClick = onCameraClick,
+                    onNewSoundsClick = onNewSoundsClick,
+                    onMenuClick = onMenuClick,
+                    showNewSoundsPrompt = showNewSoundsPrompt
                 )
             }
         ) { padding ->
@@ -374,6 +722,36 @@ private fun MainContent(
                     .padding(padding),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Stats row at top
+                if (totalFahhCount > 0) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        if (streak > 0) {
+                            Text(
+                                text = "\uD83D\uDD25 $streak day streak",
+                                color = Color.White.copy(alpha = 0.4f),
+                                fontSize = 12.sp
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = Primary.copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                text = "$totalFahhCount presses",
+                                color = Primary,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.6.sp,
+                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
+
                 // Main button area
                 Box(
                     modifier = Modifier
@@ -384,52 +762,62 @@ private fun MainContent(
                     SoundButton(
                         sound = selectedSound,
                         onClick = onPlayClick,
+                        onTap = { onButtonTap() },
                         buttonSize = 260.dp
                     )
-                }
 
-                // Camera button
-                Button(
-                    onClick = onCameraClick,
-                    shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Primary,
-                        contentColor = Color.White
-                    ),
-                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 18.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth()
+                            .height(84.dp),
+                        contentAlignment = Alignment.BottomCenter
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Videocam,
-                            contentDescription = "Camera",
-                            tint = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "GO TO CAMERA MODE",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 15.sp,
-                            letterSpacing = 1.sp
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(1.dp),
+                            modifier = Modifier.animateContentSize(tween(180))
+                        ) {
+                            celebrations.forEachIndexed { index, item ->
+                                val relativeAge = if (celebrations.lastIndex <= 0) 1f
+                                else index.toFloat() / celebrations.lastIndex.toFloat()
+                                Text(
+                                    text = item.label,
+                                    color = item.color,
+                                    fontSize = 12.sp,
+                                    lineHeight = 14.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.35.sp,
+                                    maxLines = 1,
+                                    modifier = Modifier.graphicsLayer {
+                                        alpha = 0.22f + (0.78f * relativeAge)
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
             }
         }
 
-        // Swipe hint on right edge — tappable to open sidebar (must be after Scaffold to receive taps)
         SwipeEdgeTab(
+            fromLeft = true,
+            highlighted = showNewSoundsPrompt,
+            onClick = onNewSoundsClick,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .navigationBarsPadding()
+                .padding(bottom = 142.dp)
+        )
+        SwipeEdgeTab(
+            fromLeft = false,
+            highlighted = false,
             onClick = onMenuClick,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(bottom = 140.dp)
+                .navigationBarsPadding()
+                .padding(bottom = 142.dp)
         )
 
         // ═══ WALKTHROUGH OVERLAYS ═══
@@ -471,7 +859,7 @@ private fun MainContent(
                     shape = RoundedCornerShape(20.dp),
                     color = Color.White.copy(alpha = 0.18f),
                     shadowElevation = 0.dp,
-                    border = androidx.compose.foundation.BorderStroke(
+                    border = BorderStroke(
                         1.dp, Color.White.copy(alpha = 0.35f)
                     ),
                     modifier = Modifier.padding(horizontal = 48.dp)
@@ -515,7 +903,7 @@ private fun MainContent(
             exit = fadeOut(tween(400)),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 36.dp, bottom = 160.dp)
+                .padding(end = 12.dp, bottom = 96.dp)
         ) {
             LaunchedEffect(Unit) {
                 delay(3500)
@@ -524,7 +912,7 @@ private fun MainContent(
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = Color.White.copy(alpha = 0.12f),
-                border = androidx.compose.foundation.BorderStroke(
+                border = BorderStroke(
                     1.dp, Color.White.copy(alpha = 0.2f)
                 ),
                 shadowElevation = 0.dp
@@ -535,13 +923,13 @@ private fun MainContent(
                 ) {
                     Column {
                         Text(
-                            text = "psst… more sounds",
+                            text = "psst… sounds live down here",
                             color = Color.White,
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "hiding over there →",
+                            text = "tap Sounds to browse →",
                             color = Primary,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold
@@ -556,11 +944,99 @@ private fun MainContent(
 }
 
 @Composable
-private fun SwipeEdgeTab(onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun FahhBottomBar(
+    onCameraClick: () -> Unit,
+    onNewSoundsClick: () -> Unit,
+    onMenuClick: () -> Unit,
+    showNewSoundsPrompt: Boolean
+) {
+    Box(modifier = Modifier.fillMaxWidth().height(116.dp)) {
+    NavigationBar(
+        containerColor = Color(0xFF111923),
+        contentColor = Color.White,
+        tonalElevation = 0.dp,
+        modifier = Modifier.align(Alignment.BottomCenter)
+    ) {
+        NavigationBarItem(
+            selected = false,
+            onClick = onNewSoundsClick,
+            icon = { NewSoundsStar(highlighted = showNewSoundsPrompt) },
+            label = { Text("New sounds", color = Color.White.copy(alpha = 0.72f)) },
+            colors = NavigationBarItemDefaults.colors(
+                indicatorColor = Color.Transparent,
+                unselectedIconColor = Color.Unspecified,
+                unselectedTextColor = Color.White.copy(alpha = 0.72f)
+            )
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        NavigationBarItem(
+            selected = false,
+            onClick = onMenuClick,
+            icon = { Icon(Icons.Default.Menu, contentDescription = "Open sounds") },
+            label = { Text("Sounds") },
+            colors = NavigationBarItemDefaults.colors(
+                unselectedIconColor = Color.White.copy(alpha = 0.6f),
+                unselectedTextColor = Color.White.copy(alpha = 0.6f)
+            )
+        )
+    }
+        Column(
+            modifier = Modifier.align(Alignment.TopCenter),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Surface(
+                onClick = onCameraClick,
+                shape = CircleShape,
+                color = Color.Transparent,
+                shadowElevation = 16.dp,
+                border = BorderStroke(2.dp, Color(0xFFFF9B8A)),
+                modifier = Modifier.size(88.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(Color(0xFFFF8A78), Primary, Color(0xFFA82225))
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Videocam, contentDescription = "Open camera", tint = Color.White, modifier = Modifier.size(40.dp))
+                }
+            }
+            Text("Camera", color = Color.White.copy(alpha = 0.76f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun NewSoundsStar(highlighted: Boolean) {
+    val transition = rememberInfiniteTransition(label = "newSoundsStar")
+    val glow by transition.animateFloat(
+        initialValue = if (highlighted) 0.72f else 1f,
+        targetValue = if (highlighted) 0.9f else 1f,
+        animationSpec = infiniteRepeatable(tween(2_400), RepeatMode.Reverse),
+        label = "newSoundsStarGlow"
+    )
+    Icon(
+        Icons.Default.AutoAwesome,
+        contentDescription = "New sounds",
+        tint = if (highlighted) Color(0xFFFFC56D).copy(alpha = glow) else Color.White.copy(alpha = 0.62f)
+    )
+}
+
+@Composable
+private fun SwipeEdgeTab(
+    fromLeft: Boolean,
+    highlighted: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val transition = rememberInfiniteTransition(label = "edgeTab")
     val nudge by transition.animateFloat(
         initialValue = 0f,
-        targetValue = -4f,
+        targetValue = if (highlighted) if (fromLeft) 2f else -2f else 0f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1200),
             repeatMode = RepeatMode.Reverse
@@ -570,20 +1046,31 @@ private fun SwipeEdgeTab(onClick: () -> Unit, modifier: Modifier = Modifier) {
 
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(topStart = 14.dp, bottomStart = 14.dp),
-        color = Primary.copy(alpha = 0.35f),
+        shape = if (fromLeft) RoundedCornerShape(topEnd = 10.dp, bottomEnd = 10.dp)
+        else RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp),
+        color = if (highlighted) Color(0xFFFFC56D).copy(alpha = 0.2f) else Color.White.copy(alpha = 0.08f),
         modifier = modifier
             .offset(x = nudge.dp)
+            .width(64.dp)
+            .height(48.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp)
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp)
         ) {
             Icon(
-                imageVector = Icons.Default.ChevronLeft,
-                contentDescription = "Open sounds",
-                tint = Color.White.copy(alpha = 0.9f),
-                modifier = Modifier.size(18.dp)
+                imageVector = if (fromLeft) Icons.Default.AutoAwesome else Icons.Default.Menu,
+                contentDescription = if (fromLeft) "Open new sounds" else "Open sounds",
+                tint = if (highlighted) Color(0xFFFFC56D) else Color.White.copy(alpha = 0.62f),
+                modifier = Modifier.size(14.dp)
+            )
+            Spacer(Modifier.width(3.dp))
+            Text(
+                text = if (fromLeft) "New" else "Sounds",
+                color = if (highlighted) Color(0xFFFFC56D) else Color.White.copy(alpha = 0.62f),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold
             )
         }
     }
@@ -605,7 +1092,7 @@ private fun WalkthroughBubble(text: String) {
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = Color.White.copy(alpha = 0.18f),
-        border = androidx.compose.foundation.BorderStroke(
+        border = BorderStroke(
             1.dp, Color.White.copy(alpha = 0.35f)
         ),
         shadowElevation = 0.dp,

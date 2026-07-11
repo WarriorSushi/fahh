@@ -24,22 +24,55 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import com.fahh.data.model.Sound
 import com.fahh.ui.theme.Primary
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
 
 @Composable
 fun SoundButton(
     sound: Sound,
     onClick: () -> Unit,
+    onTap: () -> Unit = {},
     buttonSize: Dp = 260.dp,
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
     var isPressed by remember { mutableStateOf(false) }
     var triggerBurst by remember { mutableStateOf(false) }
+
+    // === CONCENTRIC RIPPLE RINGS ===
+    var triggerRipple by remember { mutableStateOf(0) }
+    val ripple1 = remember { Animatable(0f) }
+    val ripple2 = remember { Animatable(0f) }
+    val ripple3 = remember { Animatable(0f) }
+
+    LaunchedEffect(triggerRipple) {
+        if (triggerRipple > 0) {
+            launch {
+                ripple1.snapTo(0f)
+                ripple1.animateTo(1f, tween(800, easing = LinearOutSlowInEasing))
+            }
+            launch {
+                kotlinx.coroutines.delay(100)
+                ripple2.snapTo(0f)
+                ripple2.animateTo(1f, tween(800, easing = LinearOutSlowInEasing))
+            }
+            launch {
+                kotlinx.coroutines.delay(200)
+                ripple3.snapTo(0f)
+                ripple3.animateTo(1f, tween(800, easing = LinearOutSlowInEasing))
+            }
+        }
+    }
 
     // === 3D DEPTH CONFIG ===
     val totalDepth = buttonSize * 0.06f  // side wall height visible when unpressed
@@ -80,12 +113,19 @@ fun SoundButton(
     // Extra space for the side depth below the button
     Box(
         modifier = modifier
-            .size(buttonSize, buttonSize + totalDepth),
+            .size(buttonSize, buttonSize + totalDepth)
+            .semantics {
+                role = Role.Button
+                contentDescription = "Play ${sound.name} sound"
+            },
         contentAlignment = Alignment.TopCenter
     ) {
         // Particle Burst Layer
         Box(
-            modifier = Modifier.size(buttonSize).align(Alignment.TopCenter),
+            modifier = Modifier
+                .size(buttonSize)
+                .align(Alignment.TopCenter)
+                .offset(y = sinkDistance),
             contentAlignment = Alignment.Center
         ) {
             ParticleBurst(
@@ -191,7 +231,9 @@ fun SoundButton(
                             isPressed = true
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             triggerBurst = true
+                            triggerRipple++
                             onClick()
+                            onTap()
 
                             // Ensure minimum visible press duration for quick taps
                             val pressStart = System.currentTimeMillis()
@@ -255,5 +297,39 @@ fun SoundButton(
                 letterSpacing = 1.sp
             )
         }
+
+        // === CONCENTRIC RIPPLE RINGS ===
+        Canvas(
+            modifier = Modifier
+                .size(buttonSize * 1.6f)
+                .align(Alignment.TopCenter)
+                // The visible red button includes its lower wall, so its perceived centre
+                // sits half a wall lower than the circular face's layout centre.
+                .offset(y = -(buttonSize * 0.3f) + (totalDepth * 0.5f) + sinkDistance)
+        ) {
+            val cx = size.width / 2
+            val cy = size.height / 2
+            val baseRadius = size.width / 3.2f  // ~button radius
+
+            listOf(ripple1, ripple2, ripple3).forEach { ripple ->
+                val p = ripple.value
+                if (p > 0f && p < 1f) {
+                    val radius = baseRadius * (1f + p * 0.5f)
+                    val alpha = 0.3f * (1f - p)
+                    drawCircle(
+                        color = Primary.copy(alpha = alpha * 0.25f),
+                        radius = radius,
+                        center = Offset(cx, cy)
+                    )
+                    drawCircle(
+                        color = Color.White.copy(alpha = alpha),
+                        radius = radius,
+                        center = Offset(cx, cy),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                    )
+                }
+            }
+        }
     }
+
 }

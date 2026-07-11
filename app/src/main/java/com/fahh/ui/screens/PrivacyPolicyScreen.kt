@@ -41,7 +41,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
                         modifier = Modifier
                             .padding(start = 4.dp)
                             .premiumGlass(CircleShape, alpha = 0.08f)
-                            .size(40.dp)
+                            .size(48.dp)
                     ) {
                         Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
                     }
@@ -54,6 +54,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .navigationBarsPadding()
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -61,19 +62,19 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
 
             PrivacySection(
                 title = "Data Collection",
-                content = "Fahh does not collect, store, or transmit any personal data. All your videos, sound preferences, and settings stay on your device. We have zero servers — your data is yours."
+                content = "Fahh has no accounts and does not upload your videos, custom sounds, sound preferences, or settings to our servers. They stay on your device. Advertising is provided by Google AdMob and is described below."
             )
             PrivacySection(
                 title = "Permissions",
-                content = "Camera & Microphone: Used only during recording to capture video with sound effects. Storage: Used to save recorded videos to your gallery. No data is uploaded anywhere."
+                content = "Camera & Microphone: used only to record videos and the optional My Sounds clips you choose to create. Custom sounds are stored privately on this device and are deleted when you delete them in Fahh. Storage: used to save recorded videos to your gallery. No recording is uploaded by Fahh."
             )
             PrivacySection(
                 title = "Advertisements",
-                content = "We use Google AdMob to show occasional ads that help keep the app free. AdMob may collect device identifiers and usage data for ad personalization. You can opt out of personalized ads in your device settings."
+                content = "We use Google AdMob for optional rewarded ads that help keep the app free. Google may collect and receive device identifiers and usage data for advertising, measurement, fraud prevention, and privacy choices. Where required, you can reopen Ad privacy choices from More cool."
             )
             PrivacySection(
                 title = "Sound Unlocks",
-                content = "Watching a rewarded ad unlocks sounds permanently on your device. This preference is stored locally and never shared."
+                content = "Watching a rewarded ad unlocks one named bundled sound, or adds one Custom sounds recording slot, on this device. These local unlock preferences are not restored after an uninstall."
             )
             PrivacySection(
                 title = "Children's Privacy",
@@ -87,7 +88,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Last updated: Feb 2026",
+                text = "Last updated: July 2026",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.45f),
                 modifier = Modifier.align(Alignment.CenterHorizontally)

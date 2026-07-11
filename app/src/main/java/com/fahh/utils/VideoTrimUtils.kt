@@ -30,7 +30,9 @@ object VideoTrimUtils {
         } catch (_: Exception) { 0 }
 
         val extractor = MediaExtractor()
-        val muxer: MediaMuxer
+        var muxer: MediaMuxer? = null
+        var muxerStarted = false
+        var muxerStopped = false
 
         try {
             extractor.setDataSource(inputFile.absolutePath)
@@ -69,6 +71,7 @@ object VideoTrimUtils {
 
             extractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
             muxer.start()
+            muxerStarted = true
 
             val buffer = ByteBuffer.allocate(maxBufferSize)
             val bufferInfo = MediaCodec.BufferInfo()
@@ -110,8 +113,13 @@ object VideoTrimUtils {
             }
 
             muxer.stop()
-            muxer.release()
+            muxerStopped = true
+        } catch (error: Throwable) {
+            outputFile.delete()
+            throw error
         } finally {
+            if (muxerStarted && !muxerStopped) runCatching { muxer?.stop() }
+            runCatching { muxer?.release() }
             runCatching { extractor.release() }
         }
     }

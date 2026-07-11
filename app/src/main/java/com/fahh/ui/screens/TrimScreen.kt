@@ -4,6 +4,8 @@ import android.media.MediaMetadataRetriever
 import android.widget.VideoView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,6 +16,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,7 +33,6 @@ import com.fahh.utils.VideoTrimUtils
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -41,8 +43,6 @@ fun TrimScreen(
     onBack: () -> Unit,
     onTrimmed: (File) -> Unit
 ) {
-    BackHandler { onBack() }
-
     val snackbar = remember { SnackbarHostState() }
     val durationMs = remember(sourceFile.absolutePath) { readDurationMs(sourceFile) }
     val durationSec = (durationMs / 1000f).coerceAtLeast(1f)
@@ -52,16 +52,33 @@ fun TrimScreen(
     var videoViewRef by remember { mutableStateOf<VideoView?>(null) }
     var isPlaying by remember { mutableStateOf(false) }
     var extraRotation by remember { mutableStateOf(0) } // 0, 90, 180, 270
+    val scope = rememberCoroutineScope()
+
+    fun requestBack() {
+        if (isSaving) {
+            scope.launch { snackbar.showSnackbar("Please wait for trimming to finish.") }
+        } else {
+            onBack()
+        }
+    }
+
+    BackHandler { requestBack() }
 
     Box(modifier = Modifier.fillMaxSize().background(Background)) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .navigationBarsPadding()
+                .padding(16.dp)
+        ) {
             // Custom HUD
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = onBack,
+                    onClick = ::requestBack,
                     modifier = Modifier.premiumGlass(CircleShape, alpha = 0.1f).size(48.dp)
                 ) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
@@ -196,12 +213,12 @@ fun TrimScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = {
                     isSaving = true
-                    CoroutineScope(Dispatchers.Main).launch {
+                    scope.launch {
                         val startMs = (trimRange.start * 1000f).toLong()
                         val endMs = (trimRange.endInclusive * 1000f).toLong()
                         val outputDir = sourceFile.parentFile ?: sourceFile.absoluteFile.parentFile

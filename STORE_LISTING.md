@@ -38,7 +38,7 @@ Open the camera. Pick a meme sound. Tap the button while filming. The sound blas
 🔴 THE BUTTON
 A giant 3D button that actually feels real. It sinks when you press it. Haptic feedback punches your finger. The sound fires instantly. It's embarrassingly satisfying. You'll press it 47 times before you even open the camera.
 
-🔊 12 SOUNDS INCLUDED
+🔊 35 SOUNDS INCLUDED
    Fahh · Bruh · Vine Boom · Wow
    Air Horn · Dun Dun Dunn · Oh My God
    Directed By · Romance Sax · Sudden Suspense
@@ -49,14 +49,13 @@ A giant 3D button that actually feels real. It sinks when you press it. Haptic f
  ▸ Trim clips inside the app
  ▸ Rotate videos
  ▸ Share to TikTok, Reels, Shorts, Snapchat, WhatsApp
- ▸ No watermark
+ ▸ Small Made with Fahh watermark
  ▸ No account needed
 
 ⚡ ZERO FRICTION
  ▸ No sign-up
  ▸ Works completely offline
- ▸ Under 10 MB
- ▸ Front and back camera switch while recording
+ ▸ Front and back camera options before recording
  ▸ Haptic feedback on every press
 
 📱 MADE FOR SHORT-FORM CONTENT
@@ -143,7 +142,7 @@ Add short captions using Canva (free) — white bold text, 1 line max.
 | 1 | Main screen, big red button | "One satisfying button." |
 | 2 | Camera mode, recording with sound button visible | "Record reactions with live sounds." |
 | 3 | Sidebar open, all 12 sounds visible | "12 meme sounds. More coming." |
-| 4 | Share screen after recording | "Share anywhere. No watermark." |
+| 4 | Share screen after recording | "Share anywhere. Made with Fahh." |
 | 5 | Trim/edit screen | "Trim and rotate in-app." |
 | 6 | Button mid-press with particles | "That press though." |
 
@@ -181,7 +180,7 @@ Make sure it looks good at 48x48 (how it appears in search results).
 
 2. Build final AAB:
    ```
-   FAHH_KEYSTORE_PASSWORD=fahhapp2026 FAHH_KEY_ALIAS=fahh FAHH_KEY_PASSWORD=fahhapp2026 ./gradlew bundleRelease
+   FAHH_KEYSTORE_PATH=<absolute-path-to-upload-keystore> FAHH_KEYSTORE_PASSWORD=<password> FAHH_KEY_ALIAS=<alias> FAHH_KEY_PASSWORD=<password> ./gradlew bundleRelease
    ```
 
 ### Play Console steps

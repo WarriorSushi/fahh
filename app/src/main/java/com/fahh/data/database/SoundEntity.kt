@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "sounds")
 data class SoundEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey val soundId: String,
     val name: String,
     val resId: Int,
     val icon: String,
