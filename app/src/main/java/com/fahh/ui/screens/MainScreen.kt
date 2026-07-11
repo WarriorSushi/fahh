@@ -13,6 +13,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.AnimatedVisibility
@@ -898,6 +899,14 @@ private fun FahhBottomBar(
     onNewSoundsClick: () -> Unit,
     onMenuClick: () -> Unit
 ) {
+    val colorCycle = rememberInfiniteTransition(label = "newSoundsColorCycle")
+    val hue by colorCycle.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(durationMillis = 4_200, easing = LinearEasing)),
+        label = "newSoundsHue"
+    )
+    val newSoundsColor = Color.hsv(hue, 0.78f, 1f)
     Box(modifier = Modifier.fillMaxWidth().height(116.dp)) {
     NavigationBar(
         containerColor = Color(0xFF111923),
@@ -906,11 +915,14 @@ private fun FahhBottomBar(
         modifier = Modifier.align(Alignment.BottomCenter)
     ) {
         NavigationBarItem(
-            selected = false,
+            selected = true,
             onClick = onNewSoundsClick,
-            icon = { Icon(Icons.Default.NewReleases, contentDescription = "New sounds") },
-            label = { Text("New sounds") },
+            icon = { Icon(Icons.Default.NewReleases, contentDescription = "New sounds", tint = newSoundsColor) },
+            label = { Text("New sounds", color = newSoundsColor) },
             colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = newSoundsColor,
+                selectedTextColor = newSoundsColor,
+                indicatorColor = newSoundsColor.copy(alpha = 0.18f),
                 unselectedIconColor = Color.White.copy(alpha = 0.6f),
                 unselectedTextColor = Color.White.copy(alpha = 0.6f)
             )
