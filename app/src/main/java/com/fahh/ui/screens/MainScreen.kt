@@ -512,11 +512,13 @@ private fun MainContent(
     // Combo system — sliding 3 second window
     val tapTimestamps = remember { mutableStateListOf<Long>() }
     var highestTierShown by remember { mutableIntStateOf(0) }
+    var lastTapAt by remember { mutableStateOf(0L) }
 
-    // Flying text queue
-    data class FlyingText(val id: Int, val label: String, val color: Color)
-    val flyingTexts = remember { mutableStateListOf<FlyingText>() }
-    var flyingId by remember { mutableIntStateOf(0) }
+    // A combo owns one current celebration. Replacing it cancels the prior animation,
+    // preventing old titles from resurfacing after a new streak starts.
+    data class ComboCelebration(val id: Int, val label: String, val color: Color, val tapCount: Int)
+    var celebration by remember { mutableStateOf<ComboCelebration?>(null) }
+    var celebrationId by remember { mutableIntStateOf(0) }
 
     // Tier definitions
     data class ComboTier(val threshold: Int, val index: Int, val label: String, val color: Color)
@@ -538,28 +540,32 @@ private fun MainContent(
     fun onButtonTap() {
         val now = System.currentTimeMillis()
 
+        // A combo only resets after a genuine idle gap, never merely because older
+        // taps have started to age out of the rolling window.
+        if (lastTapAt != 0L && now - lastTapAt > 3_000L) {
+            tapTimestamps.clear()
+            highestTierShown = 0
+            celebration = null
+        }
+        lastTapAt = now
+
         // Add this tap and prune anything older than 3 seconds
         tapTimestamps.add(now)
         tapTimestamps.removeAll { now - it > 3000 }
 
         val count = tapTimestamps.size
 
-        // If count dropped (after pruning), reset tier tracking
-        // Find the highest tier we currently qualify for
-        val currentHighestTier = comboTiers.lastOrNull { count >= it.threshold }?.index ?: 0
-        if (currentHighestTier < highestTierShown) {
-            // Window effectively reset — new combo chain
-            highestTierShown = 0
-        }
-
-        // Show any new tiers we just crossed
-        comboTiers.forEach { tier ->
-            if (count >= tier.threshold && tier.index > highestTierShown) {
-                highestTierShown = tier.index
-                onComboTierUnlocked(tier.index)
-                flyingId++
-                flyingTexts.add(FlyingText(flyingId, tier.label, tier.color))
-            }
+        val newlyReachedTier = comboTiers.lastOrNull { count >= it.threshold }
+        if (newlyReachedTier != null && newlyReachedTier.index > highestTierShown) {
+            highestTierShown = newlyReachedTier.index
+            onComboTierUnlocked(newlyReachedTier.index)
+            celebrationId++
+            celebration = ComboCelebration(
+                id = celebrationId,
+                label = newlyReachedTier.label,
+                color = newlyReachedTier.color,
+                tapCount = count
+            )
         }
     }
 
@@ -744,20 +750,17 @@ private fun MainContent(
                         buttonSize = 260.dp
                     )
 
-                    // New combo titles enter below older ones, physically pushing them upward.
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .offset(y = (-170).dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        flyingTexts.forEach { ft ->
-                            key(ft.id) {
-                                FlyingComboText(
-                                    text = ft.label,
-                                    color = ft.color,
-                                    onFinish = { flyingTexts.removeAll { it.id == ft.id } }
+                    // One clear milestone at a time keeps fast presses legible.
+                    celebration?.let { item ->
+                        Box(modifier = Modifier.align(Alignment.Center)) {
+                            key(item.id) {
+                                ComboTitleToast(
+                                    text = item.label,
+                                    color = item.color,
+                                    tapCount = item.tapCount,
+                                    onFinish = {
+                                        if (celebration?.id == item.id) celebration = null
+                                    }
                                 )
                             }
                         }
@@ -978,41 +981,45 @@ private fun FahhBottomBar(
 }
 
 @Composable
-private fun FlyingComboText(
+private fun ComboTitleToast(
     text: String,
     color: Color,
+    tapCount: Int,
     onFinish: () -> Unit
 ) {
     val alpha = remember { Animatable(0f) }
     val scale = remember { Animatable(0.3f) }
 
     LaunchedEffect(Unit) {
-        // Pop in
         launch { alpha.animateTo(1f, tween(120)) }
-        launch { scale.animateTo(1.15f, spring(dampingRatio = 0.45f, stiffness = 800f)) }
-        // Brief hold at center
-        delay(200)
-        // Shrink slightly to normal
-        launch { scale.animateTo(1f, tween(150)) }
-        // The parent column controls vertical stacking; this just fades out in place.
-        delay(900)
+        launch { scale.animateTo(1.06f, spring(dampingRatio = 0.6f, stiffness = 750f)) }
+        delay(160)
+        launch { scale.animateTo(1f, tween(140)) }
+        delay(1_050)
         alpha.animateTo(0f, tween(450))
         onFinish()
     }
 
-    Text(
-        text = text,
-        color = color,
-        fontSize = 24.sp,
-        fontWeight = FontWeight.Black,
-        letterSpacing = 2.sp,
+    Surface(
+        color = Color(0xFF121924).copy(alpha = 0.94f),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.62f)),
         modifier = Modifier
+            .offset(y = (-170).dp)
             .graphicsLayer {
                 scaleX = scale.value
                 scaleY = scale.value
                 this.alpha = alpha.value
             }
-    )
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp)
+        ) {
+            Text(text, color = color, fontSize = 20.sp, fontWeight = FontWeight.Black, letterSpacing = 1.1.sp)
+            Text("$tapCount taps in 3 seconds", color = Color.White.copy(alpha = 0.62f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        }
+    }
 }
 
 @Composable
