@@ -223,7 +223,8 @@ fun SidebarMenu(
                         Surface(
                             onClick = { volumeExpanded = !volumeExpanded },
                             shape = RoundedCornerShape(14.dp),
-                            color = Color(0xFF642C36),
+                            color = if (volumeExpanded) Color(0xFFA33C42) else Color(0xFF642C36),
+                            border = if (volumeExpanded) BorderStroke(1.dp, Primary.copy(alpha = 0.82f)) else null,
                             modifier = Modifier.fillMaxWidth().height(56.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp)) {
@@ -240,7 +241,7 @@ fun SidebarMenu(
                             onDismissRequest = { volumeExpanded = false }
                         ) {
                             Column(
-                                modifier = Modifier.width(88.dp).padding(vertical = 10.dp),
+                                modifier = Modifier.width(76.dp).padding(vertical = 8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
@@ -249,11 +250,13 @@ fun SidebarMenu(
                                     fontWeight = FontWeight.Black,
                                     fontSize = 14.sp
                                 )
-                                Box(modifier = Modifier.size(width = 88.dp, height = 320.dp), contentAlignment = Alignment.Center) {
+                                Box(modifier = Modifier.size(width = 76.dp, height = 260.dp), contentAlignment = Alignment.Center) {
                                 Slider(
                                     value = volume,
                                     onValueChange = onVolumeChange,
-                                    modifier = Modifier.width(290.dp).graphicsLayer { rotationZ = -90f },
+                                    // requiredWidth prevents the narrow popup from constraining
+                                    // the horizontal slider before it is rotated vertically.
+                                    modifier = Modifier.requiredWidth(236.dp).graphicsLayer { rotationZ = -90f },
                                     colors = SliderDefaults.colors(
                                         thumbColor = Color.White,
                                         activeTrackColor = Primary,
