@@ -9,11 +9,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +67,7 @@ fun SettingsSheet(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var milestonesExpanded by remember { mutableStateOf(false) }
     val topSounds = sounds
         .filter { !it.isLocked }
         .sortedByDescending { soundPressCounts[it.id] ?: 0 }
@@ -227,20 +234,32 @@ fun SettingsSheet(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Combo Milestones section
-                Text(
-                    text = "COMBO MILESTONES",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.4f),
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp,
-                    modifier = Modifier.padding(horizontal = 24.dp)
-                )
+                // The long title list stays out of the way until the user asks for it.
+                Surface(
+                    onClick = { milestonesExpanded = !milestonesExpanded },
+                    color = Color.White.copy(alpha = if (milestonesExpanded) 0.075f else 0.04f),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.padding(horizontal = 20.dp).fillMaxWidth()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 13.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Combo titles", color = Color.White.copy(alpha = 0.86f), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("$highestComboTier of ${milestones.size} unlocked", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp)
+                        }
+                        Icon(
+                            imageVector = if (milestonesExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = if (milestonesExpanded) "Hide combo titles" else "Show combo titles",
+                            tint = Primary
+                        )
+                    }
+                }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Vertical timeline
-                milestones.forEachIndexed { index, tier ->
+                if (milestonesExpanded) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    milestones.forEachIndexed { index, tier ->
                     val unlocked = highestComboTier >= tier.index
                     val isLast = index == milestones.lastIndex
 
@@ -308,14 +327,15 @@ fun SettingsSheet(
                             )
                         }
                     }
-                }
+                    }
 
-                Text(
-                    text = "Every combo is counted inside a rolling 3-second window.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.42f),
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
-                )
+                    Text(
+                        text = "Every combo is counted inside a rolling 3-second window.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.42f),
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
             }

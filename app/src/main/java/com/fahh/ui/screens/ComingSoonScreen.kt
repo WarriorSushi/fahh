@@ -12,6 +12,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -95,6 +97,24 @@ fun ComingSoonScreen(
                 iconTint = Color(0xFFE879F9),
                 title = "Button Skins, coming soon",
                 description = "Customize your button with unique styles: arcade buttons, doorbells, nuclear launch buttons, and more."
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            FeatureCard(
+                icon = Icons.Default.Share,
+                iconTint = Color(0xFF7DD3FC),
+                title = "Share custom sounds, coming soon",
+                description = "Send your five-second custom sounds through Android's share sheet, then preview and save them on another Fahh device."
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            FeatureCard(
+                icon = Icons.Default.LightMode,
+                iconTint = Color(0xFFFFD166),
+                title = "Light theme, coming soon",
+                description = "A purpose-built bright mode that keeps the big red button and camera controls crisp in daylight."
             )
 
             Spacer(modifier = Modifier.weight(1f))
