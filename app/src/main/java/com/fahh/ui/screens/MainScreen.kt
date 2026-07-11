@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
+import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.RepeatMode
@@ -13,7 +14,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.AnimatedVisibility
@@ -26,6 +26,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -51,7 +52,7 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.NewReleases
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.VideoLibrary
@@ -87,7 +88,6 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -159,6 +159,7 @@ fun MainScreen(
     val totalFahhCount by viewModel.totalFahhCount.collectAsState()
     val soundPressCounts by viewModel.soundPressCounts.collectAsState()
     val highestComboTier by viewModel.highestComboTier.collectAsState()
+    val newSoundsSeen by viewModel.newSoundsSeen.collectAsState()
 
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
@@ -467,6 +468,7 @@ fun MainScreen(
                                 title = "Unlocked sounds",
                                 subtitle = "Your collection and original reactions",
                                 onOpenMoreSounds = {
+                                    viewModel.markNewSoundsSeen()
                                     scope.launch {
                                         drawerState.close()
                                         delay(80)
@@ -494,7 +496,11 @@ fun MainScreen(
                     onCameraClick = onCameraClick,
                     onGalleryClick = onGalleryClick,
                     onMenuClick = { scope.launch { drawerState.open() } },
-                    onNewSoundsClick = { scope.launch { newSoundsDrawerState.open() } },
+                    onNewSoundsClick = {
+                        viewModel.markNewSoundsSeen()
+                        scope.launch { newSoundsDrawerState.open() }
+                    },
+                    showNewSoundsPrompt = !newSoundsSeen,
                     walkthroughStep = walkthroughStep,
                     onWalkthroughAdvance = {
                         walkthroughStep++
@@ -524,19 +530,17 @@ private fun MainContent(
     onGalleryClick: () -> Unit,
     onMenuClick: () -> Unit,
     onNewSoundsClick: () -> Unit,
+    showNewSoundsPrompt: Boolean,
     walkthroughStep: Int = -1,
     onWalkthroughAdvance: () -> Unit = {}
 ) {
-    // Combo system — sliding 3 second window
-    val tapTimestamps = remember { mutableStateListOf<Long>() }
+    // A fixed three-second window starts on the first tap, then resets at its boundary.
+    val comboCounter = remember { ComboWindowCounter() }
     var highestTierShown by remember { mutableIntStateOf(0) }
-    var lastTapAt by remember { mutableStateOf(0L) }
-
-    // A combo owns one current celebration. Replacing it cancels the prior animation,
-    // preventing old titles from resurfacing after a new streak starts.
-    data class ComboCelebration(val id: Int, val label: String, val color: Color, val tapCount: Int)
-    var celebration by remember { mutableStateOf<ComboCelebration?>(null) }
+    data class ComboCelebration(val id: Int, val label: String, val color: Color)
+    val celebrations = remember { mutableStateListOf<ComboCelebration>() }
     var celebrationId by remember { mutableIntStateOf(0) }
+    val comboScope = rememberCoroutineScope()
 
     // Tier definitions
     data class ComboTier(val threshold: Int, val index: Int, val label: String, val color: Color)
@@ -556,34 +560,28 @@ private fun MainContent(
     ) }
 
     fun onButtonTap() {
-        val now = System.currentTimeMillis()
-
-        // A combo only resets after a genuine idle gap, never merely because older
-        // taps have started to age out of the rolling window.
-        if (lastTapAt != 0L && now - lastTapAt > 3_000L) {
-            tapTimestamps.clear()
+        val count = comboCounter.registerTap(SystemClock.elapsedRealtime())
+        if (count == 1) {
             highestTierShown = 0
-            celebration = null
+            celebrations.clear()
         }
-        lastTapAt = now
 
-        // Add this tap and prune anything older than 3 seconds
-        tapTimestamps.add(now)
-        tapTimestamps.removeAll { now - it > 3000 }
-
-        val count = tapTimestamps.size
-
-        val newlyReachedTier = comboTiers.lastOrNull { count >= it.threshold }
+        val newlyReachedTier = comboTiers.firstOrNull { count == it.threshold }
         if (newlyReachedTier != null && newlyReachedTier.index > highestTierShown) {
             highestTierShown = newlyReachedTier.index
             onComboTierUnlocked(newlyReachedTier.index)
             celebrationId++
-            celebration = ComboCelebration(
+            val item = ComboCelebration(
                 id = celebrationId,
                 label = newlyReachedTier.label,
-                color = newlyReachedTier.color,
-                tapCount = count
+                color = newlyReachedTier.color
             )
+            if (celebrations.size == 5) celebrations.removeAt(0)
+            celebrations.add(item)
+            comboScope.launch {
+                delay(4_000)
+                celebrations.removeAll { it.id == item.id }
+            }
         }
     }
 
@@ -615,7 +613,7 @@ private fun MainContent(
                         horizontalTravel += dragAmount
                         // The home screen has no horizontal content to protect. A deliberate
                         // side swipe can therefore begin away from the physical screen edge.
-                        if (horizontalTravel >= 42.dp.toPx()) {
+                        if (showNewSoundsPrompt && horizontalTravel >= 42.dp.toPx()) {
                             onNewSoundsClick()
                             drawerOpened = true
                         } else if (horizontalTravel <= -42.dp.toPx()) {
@@ -703,7 +701,7 @@ private fun MainContent(
                                 )
                             }
                             DropdownMenuItem(
-                                text = { Text("Combos count taps within 3 seconds.", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp) },
+                                text = { Text("The first tap starts a fixed 3-second combo window.", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp) },
                                 onClick = { achievementsExpanded = false }
                             )
                         }
@@ -714,7 +712,8 @@ private fun MainContent(
                 FahhBottomBar(
                     onCameraClick = onCameraClick,
                     onNewSoundsClick = onNewSoundsClick,
-                    onMenuClick = onMenuClick
+                    onMenuClick = onMenuClick,
+                    showNewSoundsPrompt = showNewSoundsPrompt
                 )
             }
         ) { padding ->
@@ -768,16 +767,31 @@ private fun MainContent(
                         buttonSize = 260.dp
                     )
 
-                    // One clear milestone at a time keeps fast presses legible.
-                    celebration?.let { item ->
-                        Box(modifier = Modifier.align(Alignment.Center)) {
-                            key(item.id) {
-                                ComboTitleToast(
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth()
+                            .height(84.dp),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(1.dp),
+                            modifier = Modifier.animateContentSize(tween(180))
+                        ) {
+                            celebrations.forEachIndexed { index, item ->
+                                val relativeAge = if (celebrations.lastIndex <= 0) 1f
+                                else index.toFloat() / celebrations.lastIndex.toFloat()
+                                Text(
                                     text = item.label,
                                     color = item.color,
-                                    tapCount = item.tapCount,
-                                    onFinish = {
-                                        if (celebration?.id == item.id) celebration = null
+                                    fontSize = 12.sp,
+                                    lineHeight = 14.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.35.sp,
+                                    maxLines = 1,
+                                    modifier = Modifier.graphicsLayer {
+                                        alpha = 0.22f + (0.78f * relativeAge)
                                     }
                                 )
                             }
@@ -788,11 +802,13 @@ private fun MainContent(
             }
         }
 
-        SwipeEdgeTab(
-            fromLeft = true,
-            onClick = onNewSoundsClick,
-            modifier = Modifier.align(Alignment.BottomStart).padding(bottom = 142.dp)
-        )
+        if (showNewSoundsPrompt) {
+            SwipeEdgeTab(
+                fromLeft = true,
+                onClick = onNewSoundsClick,
+                modifier = Modifier.align(Alignment.BottomStart).padding(bottom = 142.dp)
+            )
+        }
         SwipeEdgeTab(
             fromLeft = false,
             onClick = onMenuClick,
@@ -926,16 +942,9 @@ private fun MainContent(
 private fun FahhBottomBar(
     onCameraClick: () -> Unit,
     onNewSoundsClick: () -> Unit,
-    onMenuClick: () -> Unit
+    onMenuClick: () -> Unit,
+    showNewSoundsPrompt: Boolean
 ) {
-    val colorCycle = rememberInfiniteTransition(label = "newSoundsColorCycle")
-    val hue by colorCycle.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(durationMillis = 4_200, easing = LinearEasing)),
-        label = "newSoundsHue"
-    )
-    val newSoundsColor = Color.hsv(hue, 0.78f, 1f)
     Box(modifier = Modifier.fillMaxWidth().height(116.dp)) {
     NavigationBar(
         containerColor = Color(0xFF111923),
@@ -943,19 +952,19 @@ private fun FahhBottomBar(
         tonalElevation = 0.dp,
         modifier = Modifier.align(Alignment.BottomCenter)
     ) {
-        NavigationBarItem(
-            selected = true,
-            onClick = onNewSoundsClick,
-            icon = { Icon(Icons.Default.NewReleases, contentDescription = "New sounds", tint = newSoundsColor) },
-            label = { Text("New sounds", color = newSoundsColor) },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = newSoundsColor,
-                selectedTextColor = newSoundsColor,
-                indicatorColor = newSoundsColor.copy(alpha = 0.18f),
-                unselectedIconColor = Color.White.copy(alpha = 0.6f),
-                unselectedTextColor = Color.White.copy(alpha = 0.6f)
+        if (showNewSoundsPrompt) {
+            NavigationBarItem(
+                selected = false,
+                onClick = onNewSoundsClick,
+                icon = { NewSoundsStar() },
+                label = { Text("New sounds", color = Color.White.copy(alpha = 0.72f)) },
+                colors = NavigationBarItemDefaults.colors(
+                    indicatorColor = Color.Transparent,
+                    unselectedIconColor = Color.Unspecified,
+                    unselectedTextColor = Color.White.copy(alpha = 0.72f)
+                )
             )
-        )
+        }
         Spacer(modifier = Modifier.weight(1f))
         NavigationBarItem(
             selected = false,
@@ -999,45 +1008,19 @@ private fun FahhBottomBar(
 }
 
 @Composable
-private fun ComboTitleToast(
-    text: String,
-    color: Color,
-    tapCount: Int,
-    onFinish: () -> Unit
-) {
-    val alpha = remember { Animatable(0f) }
-    val scale = remember { Animatable(0.3f) }
-
-    LaunchedEffect(Unit) {
-        launch { alpha.animateTo(1f, tween(120)) }
-        launch { scale.animateTo(1.06f, spring(dampingRatio = 0.6f, stiffness = 750f)) }
-        delay(160)
-        launch { scale.animateTo(1f, tween(140)) }
-        delay(1_050)
-        alpha.animateTo(0f, tween(450))
-        onFinish()
-    }
-
-    Surface(
-        color = Color(0xFF121924).copy(alpha = 0.94f),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.62f)),
-        modifier = Modifier
-            .offset(y = (-170).dp)
-            .graphicsLayer {
-                scaleX = scale.value
-                scaleY = scale.value
-                this.alpha = alpha.value
-            }
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp)
-        ) {
-            Text(text, color = color, fontSize = 20.sp, fontWeight = FontWeight.Black, letterSpacing = 1.1.sp)
-            Text("$tapCount taps in 3 seconds", color = Color.White.copy(alpha = 0.62f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-        }
-    }
+private fun NewSoundsStar() {
+    val transition = rememberInfiniteTransition(label = "newSoundsStar")
+    val glow by transition.animateFloat(
+        initialValue = 0.72f,
+        targetValue = 0.9f,
+        animationSpec = infiniteRepeatable(tween(2_400), RepeatMode.Reverse),
+        label = "newSoundsStarGlow"
+    )
+    Icon(
+        Icons.Default.AutoAwesome,
+        contentDescription = "New sounds",
+        tint = Color(0xFFFFC56D).copy(alpha = glow)
+    )
 }
 
 @Composable

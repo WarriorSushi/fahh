@@ -39,6 +39,7 @@ class SoundViewModelTest {
         every { soundRepository.allSounds } returns flowOf(emptyList())
         every { settingsRepository.volumeFlow } returns flowOf(1.0f)
         every { settingsRepository.walkthroughDoneFlow } returns flowOf(true)
+        every { settingsRepository.newSoundsSeenFlow } returns flowOf(false)
         every { settingsRepository.streakFlow } returns flowOf(0)
         every { settingsRepository.totalFahhCountFlow } returns flowOf(0)
         every { settingsRepository.highestComboTierFlow } returns flowOf(0)

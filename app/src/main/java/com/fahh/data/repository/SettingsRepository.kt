@@ -45,6 +45,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val MY_SOUNDS_UNLOCKED = androidx.datastore.preferences.core.booleanPreferencesKey("my_sounds_unlocked")
         val CUSTOM_SOUND_SLOTS = intPreferencesKey("custom_sound_slots")
         val UPDATE_ONBOARDING_VERSION = intPreferencesKey("update_onboarding_version")
+        val NEW_SOUNDS_SEEN = androidx.datastore.preferences.core.booleanPreferencesKey("new_sounds_seen")
     }
 
     val volumeFlow: Flow<Float> = context.dataStore.data.map { preferences ->
@@ -88,6 +89,16 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     suspend fun setWalkthroughDone() {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.WALKTHROUGH_DONE] = true
+        }
+    }
+
+    val newSoundsSeenFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.NEW_SOUNDS_SEEN] ?: false
+    }
+
+    suspend fun markNewSoundsSeen() {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.NEW_SOUNDS_SEEN] = true
         }
     }
 
@@ -230,20 +241,18 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     }
 
     suspend fun recordDailyActivity() {
-        val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+        val todayDate = LocalDate.now()
+        val today = todayDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
         context.dataStore.edit { preferences ->
             val lastDate = preferences[PreferencesKeys.LAST_ACTIVE_DATE]
             val parsedLastDate = runCatching { lastDate?.let(LocalDate::parse) }.getOrNull()
-            when {
-                lastDate == today -> { /* already recorded today */ }
-                parsedLastDate == LocalDate.now().minusDays(1) -> {
-                    preferences[PreferencesKeys.STREAK_COUNT] = (preferences[PreferencesKeys.STREAK_COUNT] ?: 0) + 1
-                    preferences[PreferencesKeys.LAST_ACTIVE_DATE] = today
-                }
-                else -> {
-                    preferences[PreferencesKeys.STREAK_COUNT] = 1
-                    preferences[PreferencesKeys.LAST_ACTIVE_DATE] = today
-                }
+            if (lastDate != today) {
+                preferences[PreferencesKeys.STREAK_COUNT] = calculateDailyStreak(
+                    lastActiveDate = parsedLastDate,
+                    today = todayDate,
+                    currentStreak = preferences[PreferencesKeys.STREAK_COUNT] ?: 0
+                )
+                preferences[PreferencesKeys.LAST_ACTIVE_DATE] = today
             }
         }
     }

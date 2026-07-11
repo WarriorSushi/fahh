@@ -55,6 +55,12 @@ class SoundViewModel @Inject constructor(
         initialValue = true // default true so walkthrough doesn't flash on existing users
     )
 
+    val newSoundsSeen = settingsRepository.newSoundsSeenFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
     val streak: StateFlow<Int> = settingsRepository.streakFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -164,6 +170,10 @@ class SoundViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.setWalkthroughDone()
         }
+    }
+
+    fun markNewSoundsSeen() {
+        viewModelScope.launch { settingsRepository.markNewSoundsSeen() }
     }
 
     fun completeOnboarding() {
