@@ -7,6 +7,8 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -61,6 +63,7 @@ fun ShareScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -79,7 +82,7 @@ fun ShareScreen(
             // Video Preview Card
             Box(
                 modifier = Modifier
-                    .weight(1f)
+                    .height(320.dp)
                     .fillMaxWidth()
                     .premiumGlass(RoundedCornerShape(32.dp), alpha = 0.04f)
                     .clip(RoundedCornerShape(32.dp))

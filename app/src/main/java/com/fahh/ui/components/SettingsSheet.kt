@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fahh.ui.theme.Primary
 import com.fahh.data.model.Sound
+import com.fahh.BuildConfig
 
 private data class MilestoneTier(
     val index: Int,
@@ -64,6 +65,8 @@ fun SettingsSheet(
     onShareText: (String) -> Unit = {},
     onPrivacyClick: () -> Unit,
     onComingSoonClick: () -> Unit,
+    showAdPrivacyOptions: Boolean = false,
+    onAdPrivacyClick: () -> Unit = {},
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -75,7 +78,8 @@ fun SettingsSheet(
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .width(340.dp)
+            .widthIn(max = 340.dp)
+            .fillMaxWidth()
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
@@ -232,6 +236,32 @@ fun SettingsSheet(
                     }
                 }
 
+                if (showAdPrivacyOptions) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        onClick = onAdPrivacyClick,
+                        color = Color.White.copy(alpha = 0.04f),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.padding(horizontal = 20.dp).fillMaxWidth()
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
+                        ) {
+                            Icon(Icons.Default.Shield, contentDescription = null, tint = Primary, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                "Ad privacy choices",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.White.copy(alpha = 0.3f))
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // The long title list stays out of the way until the user asks for it.
@@ -342,7 +372,7 @@ fun SettingsSheet(
 
             // App version
             Text(
-                text = "Fahh v1.0.6",
+                text = "Fahh v${BuildConfig.VERSION_NAME}",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.25f),
                 modifier = Modifier

@@ -32,7 +32,7 @@ Every soundboard app lets you press buttons alone in your room. Fahh plays the s
 
 ### Features
 
-- **12 meme sounds** — Fahh, Bruh, Vine Boom, Wow, Air Horn, Oh My God, Dun Dun Dunn, Directed By, Romance Sax, Sudden Suspense, Yoooo Japan, Gop Gop Gop
+- **36 bundled reaction sounds** with four free starters and optional one-sound rewarded unlocks
 - **Live sound + camera** — sound plays through speaker during recording
 - **3D button** — spring physics, haptic feedback, particle burst
 - **Trim & rotate** — edit clips without leaving the app
@@ -49,10 +49,10 @@ Every soundboard app lets you press buttons alone in your room. Fahh plays the s
 - Hilt for dependency injection
 - Room for local persistence
 - DataStore for preferences
-- Google AdMob (rewarded + interstitial)
+- Google AdMob rewarded ads for optional sound and custom-slot unlocks
 - MediaMuxer for video trimming with rotation metadata
 
-Min SDK 24 · Target SDK 35 · ~10 MB
+Min SDK 24 · Target SDK 35
 
 ---
 

@@ -206,10 +206,12 @@ private fun VideoThumbnailCard(file: File, onClick: () -> Unit) {
         withContext(Dispatchers.IO) {
             thumbnail = try {
                 val retriever = MediaMetadataRetriever()
-                retriever.setDataSource(file.absolutePath)
-                val frame = retriever.getFrameAtTime(1_000_000) // 1 second in
-                retriever.release()
-                frame
+                try {
+                    retriever.setDataSource(file.absolutePath)
+                    retriever.getFrameAtTime(1_000_000) // 1 second in
+                } finally {
+                    runCatching { retriever.release() }
+                }
             } catch (_: Exception) {
                 null
             }

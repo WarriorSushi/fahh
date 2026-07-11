@@ -41,6 +41,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 
 import androidx.compose.foundation.shape.CircleShape
@@ -140,6 +141,8 @@ fun MainScreen(
     onComingSoonClick: () -> Unit,
     onGalleryClick: () -> Unit,
     onMySoundsClick: () -> Unit,
+    showAdPrivacyOptions: Boolean,
+    onAdPrivacyClick: () -> Unit,
     viewModel: SoundViewModel
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -191,7 +194,10 @@ fun MainScreen(
 
     fun loadRewardedAd() {
         if (isRewardedAdLoading || rewardedAd != null) return
-        if (!ConsentManager.canRequestAds(context)) return
+        if (!ConsentManager.canRequestAds(context)) {
+            adErrorText = "Ad privacy setup is not ready yet. Close this and try again shortly."
+            return
+        }
         isRewardedAdLoading = true
         AdManager.loadRewardedAd(
             context = context,
@@ -240,7 +246,17 @@ fun MainScreen(
             textContentColor = Color.White.copy(alpha = 0.7f),
             title = { Text("Unlock ${sound.name}", fontWeight = FontWeight.Bold) },
             text = {
-                Text("Watch one short ad to unlock this sound permanently on this device.")
+                Column {
+                    Text("Watch one short ad to unlock this sound permanently on this device.")
+                    adErrorText?.let { message ->
+                        Text(
+                            message,
+                            color = Color(0xFFFFB4AB),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 10.dp)
+                        )
+                    }
+                }
             },
             confirmButton = {
                 Button(
@@ -396,6 +412,8 @@ fun MainScreen(
                                     showSettings = false
                                     onComingSoonClick()
                                 },
+                                showAdPrivacyOptions = showAdPrivacyOptions,
+                                onAdPrivacyClick = onAdPrivacyClick,
                                 onBack = { showSettings = false }
                             )
                         } else {
@@ -1046,6 +1064,7 @@ private fun SwipeEdgeTab(
         color = Primary.copy(alpha = 0.18f),
         modifier = modifier
             .offset(x = nudge.dp)
+            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

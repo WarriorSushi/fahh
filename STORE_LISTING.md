@@ -38,7 +38,7 @@ Open the camera. Pick a meme sound. Tap the button while filming. The sound blas
 🔴 THE BUTTON
 A giant 3D button that actually feels real. It sinks when you press it. Haptic feedback punches your finger. The sound fires instantly. It's embarrassingly satisfying. You'll press it 47 times before you even open the camera.
 
-🔊 12 SOUNDS INCLUDED
+🔊 36 SOUNDS INCLUDED
    Fahh · Bruh · Vine Boom · Wow
    Air Horn · Dun Dun Dunn · Oh My God
    Directed By · Romance Sax · Sudden Suspense
@@ -55,8 +55,7 @@ A giant 3D button that actually feels real. It sinks when you press it. Haptic f
 ⚡ ZERO FRICTION
  ▸ No sign-up
  ▸ Works completely offline
- ▸ Under 10 MB
- ▸ Front and back camera switch while recording
+ ▸ Front and back camera options before recording
  ▸ Haptic feedback on every press
 
 📱 MADE FOR SHORT-FORM CONTENT

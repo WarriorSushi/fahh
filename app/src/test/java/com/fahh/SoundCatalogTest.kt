@@ -20,4 +20,21 @@ class SoundCatalogTest {
         assertTrue(SoundCatalog.defaultSelectedSound.id == "fahh")
         assertTrue(!SoundCatalog.defaultSelectedSound.isLocked)
     }
+
+    @Test
+    fun `intentionally removed staged sounds stay out of the bundled catalog`() {
+        val forbiddenFragments = setOf(
+            "another_one_dj_khaled",
+            "bad_to_the_bone",
+            "rizzer",
+            "you_need_to_stfu"
+        )
+        val normalizedCatalogText = SoundCatalog.sounds.flatMap { sound ->
+            listOf(sound.id, sound.name, sound.packName)
+        }.joinToString("_").lowercase().replace(Regex("[^a-z0-9]+"), "_")
+
+        forbiddenFragments.forEach { fragment ->
+            assertTrue("Removed sound $fragment must not be bundled", fragment !in normalizedCatalogText)
+        }
+    }
 }

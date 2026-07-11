@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,6 +44,8 @@ import com.fahh.utils.AdManager
 import com.fahh.utils.ConsentManager
 import com.fahh.viewmodel.SoundViewModel
 import com.google.android.gms.ads.rewarded.RewardedAd
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import kotlinx.coroutines.delay
 import java.io.File
 import kotlin.math.max
@@ -56,6 +59,7 @@ private const val RecordingLimitSeconds = 5
 fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
     val context = LocalContext.current
     val activity = context.findActivity()
+    val lifecycleOwner = LocalLifecycleOwner.current
     val customSoundSlots by soundViewModel.customSoundSlots.collectAsState()
     val recording by soundViewModel.isCustomRecording.collectAsState()
     val sounds by soundViewModel.allSounds.collectAsState()
@@ -115,6 +119,16 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
         if (recording) finishRecording()
     }
 
+    DisposableEffect(lifecycleOwner, recording) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP && recording) {
+                soundViewModel.cancelCustomSoundRecording()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) soundViewModel.startCustomSoundRecording().onFailure { error = it.message }
         else error = "Microphone permission is needed to record a sound."
@@ -124,7 +138,14 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
         val ad = rewardedAd
         when {
             activity == null -> error = "Could not open the ad from this screen."
-            ad == null -> loadRewardedAd()
+            ad == null -> {
+                error = if (ConsentManager.canRequestAds(context)) {
+                    "Loading a reward ad. Try again in a moment."
+                } else {
+                    "Ad privacy setup is not ready yet. Try again shortly."
+                }
+                loadRewardedAd()
+            }
             else -> {
                 rewardedAd = null
                 AdManager.showRewardedAd(
@@ -449,13 +470,18 @@ private fun TrimWaveform(selectedRange: ClosedFloatingPointRange<Float>, duratio
     }
 }
 
-private fun readAudioDurationMs(path: String?): Long = runCatching {
+private fun readAudioDurationMs(path: String?): Long {
     val retriever = MediaMetadataRetriever()
-    retriever.setDataSource(path)
-    val result = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 5_000L
-    retriever.release()
-    result.coerceAtLeast(250L)
-}.getOrDefault(5_000L)
+    return try {
+        retriever.setDataSource(path)
+        (retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 5_000L)
+            .coerceAtLeast(250L)
+    } catch (_: Exception) {
+        5_000L
+    } finally {
+        runCatching { retriever.release() }
+    }
+}
 
 private fun formatAudioTime(valueMs: Float): String = "%.1fs".format(valueMs / 1_000f)
 

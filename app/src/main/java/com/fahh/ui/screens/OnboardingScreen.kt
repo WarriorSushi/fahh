@@ -37,6 +37,15 @@ private val onboardingImages = listOf(
     R.drawable.onboard_update_custom
 )
 
+private val onboardingDescriptions = listOf(
+    "Welcome to Fahh, a fast meme sound reaction camera.",
+    "Record a reaction while Fahh plays the selected sound through your speaker.",
+    "Press the large red button to play the selected reaction sound instantly.",
+    "Rapid presses unlock playful local combo titles and add to your press count.",
+    "Browse the new sound drop and watch one optional rewarded ad to unlock a named sound on this device.",
+    "Record private custom sounds locally, with one optional rewarded ad for each saved slot."
+)
+
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
 fun OnboardingScreen(
@@ -61,7 +70,7 @@ fun OnboardingScreen(
             ) {
                 Image(
                     painter = painterResource(id = onboardingImages[page]),
-                    contentDescription = null,
+                    contentDescription = onboardingDescriptions[page],
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
                         .fillMaxWidth()

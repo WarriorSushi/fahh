@@ -25,9 +25,12 @@ import com.fahh.viewmodel.SoundViewModel
 import com.google.android.play.core.review.ReviewManagerFactory
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private val privacyOptionsRequired = MutableStateFlow(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -46,7 +49,7 @@ class MainActivity : ComponentActivity() {
 
         // Request GDPR/EEA consent before loading ads
         ConsentManager.requestConsent(this) {
-            // Consent gathered or not required — ads can now load
+            privacyOptionsRequired.value = ConsentManager.isPrivacyOptionsRequired()
         }
 
         setContent {
@@ -56,6 +59,7 @@ class MainActivity : ComponentActivity() {
                 var lastVideoPath by rememberSaveable { mutableStateOf<String?>(null) }
                 val lastVideoFile = lastVideoPath?.let(::File)
                 val showRatingPrompt by soundViewModel.showRatingPrompt.collectAsState()
+                val showAdPrivacyOptions by privacyOptionsRequired.collectAsState()
 
                 // Wait for DataStore to resolve, then navigate once
                 LaunchedEffect(Unit) {
@@ -154,6 +158,12 @@ class MainActivity : ComponentActivity() {
                             },
                             onMySoundsClick = {
                                 navController.navigate(Screen.MySounds.route)
+                            },
+                            showAdPrivacyOptions = showAdPrivacyOptions,
+                            onAdPrivacyClick = {
+                                ConsentManager.showPrivacyOptions(this@MainActivity) {
+                                    privacyOptionsRequired.value = ConsentManager.isPrivacyOptionsRequired()
+                                }
                             },
                             viewModel = soundViewModel
                         )

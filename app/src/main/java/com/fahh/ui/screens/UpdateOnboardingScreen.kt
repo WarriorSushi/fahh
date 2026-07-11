@@ -22,6 +22,10 @@ import com.fahh.ui.theme.Background
 import kotlinx.coroutines.launch
 
 private val updateImages = listOf(R.drawable.onboard_update_new, R.drawable.onboard_update_custom)
+private val updateDescriptions = listOf(
+    "New sound drop: browse more reactions and unlock a named sound with an optional rewarded ad.",
+    "Custom sounds: record short private clips and keep them locally in rewarded slots."
+)
 
 /** A one-time announcement for existing users after they install this app update. */
 @Composable
@@ -35,7 +39,7 @@ fun UpdateOnboardingScreen(onFinish: () -> Unit) {
         HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
             Image(
                 painter = painterResource(updateImages[page]),
-                contentDescription = "What's new",
+                contentDescription = updateDescriptions[page],
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxWidth()

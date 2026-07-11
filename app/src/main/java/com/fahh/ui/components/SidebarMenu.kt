@@ -76,7 +76,8 @@ fun SidebarMenu(
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .width(352.dp)
+            .widthIn(max = 352.dp)
+            .fillMaxWidth()
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
@@ -169,7 +170,7 @@ fun SidebarMenu(
                             )
                             IconButton(
                                 onClick = onDismissNotice,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(48.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Close,

@@ -49,6 +49,16 @@ object ConsentManager {
         return info.canRequestAds()
     }
 
+    fun isPrivacyOptionsRequired(): Boolean =
+        consentInformation?.privacyOptionsRequirementStatus ==
+            ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
+
+    fun showPrivacyOptions(activity: Activity, onDismissed: () -> Unit) {
+        UserMessagingPlatform.showPrivacyOptionsForm(activity) {
+            onDismissed()
+        }
+    }
+
     private fun loadAndShowForm(activity: Activity, onConsentResult: () -> Unit) {
         UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) {
             // Form dismissed or not needed — proceed

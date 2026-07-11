@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalDensity
 import com.fahh.data.model.Sound
 import com.fahh.ui.theme.Primary
 
@@ -44,8 +45,10 @@ fun SoundGrid(
     val unlocked = sounds.filter { !it.isLocked }
     val locked = sounds.filter { it.isLocked }
 
+    val singleColumn = LocalDensity.current.fontScale >= 1.3f
+
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = GridCells.Fixed(if (singleColumn) 1 else 2),
         contentPadding = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -61,7 +64,7 @@ fun SoundGrid(
             )
         }
         if (onMoreSoundsClick != null) {
-            item(span = { GridItemSpan(2) }) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 Surface(
                     onClick = onMoreSoundsClick,
                     shape = RoundedCornerShape(14.dp),
@@ -84,7 +87,7 @@ fun SoundGrid(
             }
         }
         if (locked.isNotEmpty()) {
-            item(span = { GridItemSpan(2) }) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 Divider(
                     color = Color.White.copy(alpha = 0.08f),
                     thickness = 1.dp,
@@ -129,7 +132,7 @@ private fun SoundTile(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         modifier = Modifier
-            .height(112.dp)
+            .height(if (LocalDensity.current.fontScale >= 1.3f) 132.dp else 124.dp)
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onSelect)
             .border(
@@ -150,15 +153,15 @@ private fun SoundTile(
                 color = if (sound.isLocked) Color.White.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.14f),
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .size(32.dp)
+                    .size(48.dp)
                     .clickable(onClick = onPreview)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Preview",
+                        contentDescription = "Preview ${sound.name}",
                         tint = if (sound.isLocked) Color.White.copy(alpha = 0.35f) else Color.White.copy(alpha = 0.9f),
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
@@ -168,7 +171,7 @@ private fun SoundTile(
                 // Sound name row
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(end = 36.dp)
+                    modifier = Modifier.padding(end = 52.dp)
                 ) {
                     if (sound.filePath != null) {
                         Icon(
@@ -205,7 +208,7 @@ private fun SoundTile(
                         text = if (sound.isLocked) "WATCH 1 AD TO UNLOCK" else if (isSelected) "ACTIVE" else "READY",
                         style = MaterialTheme.typography.labelSmall,
                         color = if (sound.isLocked) Color(0xFFFF9D42) else Primary,
-                        fontSize = 7.sp,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 0.5.sp,
                         modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
@@ -224,7 +227,7 @@ private fun SoundTile(
                         text = sound.packName.uppercase(),
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.45f),
-                        fontSize = 9.sp,
+                        fontSize = 10.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         fontWeight = FontWeight.Bold,
@@ -239,7 +242,7 @@ private fun SoundTile(
                             Text(
                                 text = "$pressCount presses",
                                 color = if (isSelected) Primary else Color.White.copy(alpha = 0.7f),
-                                fontSize = 8.sp,
+                                fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                             )

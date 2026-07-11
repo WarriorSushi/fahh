@@ -261,6 +261,27 @@ Fahh does not look generically AI-generated. The hero control, playful copy, and
 - `targetSdk 35` currently meets the Play update requirement. See [Target API requirements](https://support.google.com/googleplay/android-developer/answer/11926878).
 - Public privacy URL returned HTTP 200 on July 11, 2026, but its content is stale as described above.
 
+## Remediation completed after the baseline audit
+
+The findings above intentionally describe the audited baseline at `f92d2a4`. The following safe fixes were implemented afterward:
+
+- **P1-01 fixed:** removed forced watermark export, its dead preference, and the Media3 export dependency. New clips go directly to review without branding.
+- **P1-02 partially fixed:** removed the source-deleting export race and moved finalized-file delivery into retained CameraViewModel state. A single canonical MediaStore/app-file design remains future work.
+- **P1-03 fixed:** system and top-bar Back now provide feedback instead of leaving during recording or saving.
+- **P1-04 fixed for configuration/process recreation:** current video path uses saveable state and is validated by existing Share/Trim guards.
+- **P1-05 fixed:** a single `SoundPool` listener now queues pending taps by sample ID and handles out-of-order loads deterministically.
+- **P1-08 fixed in code:** More cool exposes UMP privacy options when the SDK says the entry point is required.
+- **P1-09 substantially improved:** action red now supports white text at 4.62:1, preview/dismiss/edge targets are at least 48 dp, and tiny sound status labels were raised to 10 sp.
+- **P1-10 fixed for current image onboarding:** every page now has a page-specific TalkBack description. Converting baked-in image text to native text remains preferred.
+- **P1-11 substantially improved:** drawers constrain to available width, large-font sound grids become one column, and Share/Trim can scroll.
+- **P1-12 substantially improved:** the recorder enforces a five-second maximum and active custom recording is cancelled when the screen lifecycle stops.
+- **P2-03 improved:** consent-pending/ad-loading states now produce user-visible retry guidance.
+- **P2-05 partially fixed:** malformed persisted activity dates no longer crash parsing.
+- **P2-06 fixed in repository copy:** sound count, camera-switch wording, size claim, README ad model, and in-app version label now match source.
+- **P3-02 fixed:** gallery and custom-audio metadata retrievers now release on exception paths.
+
+Still release-blocking after code remediation: P1-06 rights evidence, P1-07 public privacy/Data Safety synchronization, real-device camera/media verification, and the signed minified internal release check.
+
 ## Positive findings to preserve
 
 - The hero button has a clear button role and a sound-specific accessibility label.

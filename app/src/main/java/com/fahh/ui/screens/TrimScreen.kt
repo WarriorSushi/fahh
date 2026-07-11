@@ -4,6 +4,8 @@ import android.media.MediaMetadataRetriever
 import android.widget.VideoView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,7 +65,7 @@ fun TrimScreen(
     BackHandler { requestBack() }
 
     Box(modifier = Modifier.fillMaxSize().background(Background)) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
             // Custom HUD
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
@@ -205,7 +207,7 @@ fun TrimScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = {

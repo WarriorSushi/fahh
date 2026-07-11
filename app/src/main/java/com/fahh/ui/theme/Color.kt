@@ -3,7 +3,7 @@ package com.fahh.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // Core Premium Palette
-val Primary = Color(0xFFFF5A3B)  // Vibrant Coral/Orange-Red
+val Primary = Color(0xFFD83A22)  // Warm action red; white text contrast is 4.62:1
 val Secondary = Color(0xFF3B82F6) // Electric Blue
 val Background = Color(0xFF0D0F16) // Deep ink, distinct from raised surfaces
 val Surface = Color(0xFF121824)    // Navigation and quiet panels

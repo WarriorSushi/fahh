@@ -23,6 +23,7 @@ class CustomSoundRecorder @Inject constructor(@ApplicationContext private val co
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
             setAudioEncodingBitRate(128_000)
             setAudioSamplingRate(44_100)
+            setMaxDuration(5_000)
             setOutputFile(output.absolutePath)
             prepare()
             start()

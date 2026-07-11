@@ -41,7 +41,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
                         modifier = Modifier
                             .padding(start = 4.dp)
                             .premiumGlass(CircleShape, alpha = 0.08f)
-                            .size(40.dp)
+                            .size(48.dp)
                     ) {
                         Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
                     }
@@ -69,7 +69,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
             )
             PrivacySection(
                 title = "Advertisements",
-                content = "We use Google AdMob to show occasional ads that help keep the app free. AdMob may collect device identifiers and usage data for ad personalization. You can opt out of personalized ads in your device settings."
+                content = "We use Google AdMob for optional rewarded ads that help keep the app free. Google may collect and receive device identifiers and usage data for advertising, measurement, fraud prevention, and privacy choices. Where required, you can reopen Ad privacy choices from More cool."
             )
             PrivacySection(
                 title = "Sound Unlocks",

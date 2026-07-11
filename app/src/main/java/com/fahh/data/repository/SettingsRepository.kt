@@ -233,9 +233,10 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
         context.dataStore.edit { preferences ->
             val lastDate = preferences[PreferencesKeys.LAST_ACTIVE_DATE]
+            val parsedLastDate = runCatching { lastDate?.let(LocalDate::parse) }.getOrNull()
             when {
                 lastDate == today -> { /* already recorded today */ }
-                lastDate != null && LocalDate.parse(lastDate) == LocalDate.now().minusDays(1) -> {
+                parsedLastDate == LocalDate.now().minusDays(1) -> {
                     preferences[PreferencesKeys.STREAK_COUNT] = (preferences[PreferencesKeys.STREAK_COUNT] ?: 0) + 1
                     preferences[PreferencesKeys.LAST_ACTIVE_DATE] = today
                 }
