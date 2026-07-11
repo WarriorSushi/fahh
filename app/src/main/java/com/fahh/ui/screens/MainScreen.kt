@@ -442,6 +442,7 @@ fun MainScreen(
                                 onOpenMoreSounds = {
                                     scope.launch {
                                         drawerState.close()
+                                        delay(80)
                                         newSoundsDrawerState.open()
                                     }
                                 }
@@ -570,10 +571,12 @@ private fun MainContent(
             .background(Background)
             .pointerInput(Unit) {
                 var startedAtLeftEdge = false
+                var startedAtRightEdge = false
                 var accumulatedDrag = 0f
                 detectHorizontalDragGestures(
                     onDragStart = { offset ->
                         startedAtLeftEdge = offset.x <= 48.dp.toPx()
+                        startedAtRightEdge = offset.x >= size.width - 48.dp.toPx()
                         accumulatedDrag = 0f
                     },
                     onHorizontalDrag = { _, dragAmount ->
@@ -584,9 +587,22 @@ private fun MainContent(
                                 startedAtLeftEdge = false
                             }
                         }
+                        if (startedAtRightEdge) {
+                            accumulatedDrag += dragAmount
+                            if (accumulatedDrag < -42f) {
+                                onMenuClick()
+                                startedAtRightEdge = false
+                            }
+                        }
                     },
-                    onDragEnd = { startedAtLeftEdge = false },
-                    onDragCancel = { startedAtLeftEdge = false }
+                    onDragEnd = {
+                        startedAtLeftEdge = false
+                        startedAtRightEdge = false
+                    },
+                    onDragCancel = {
+                        startedAtLeftEdge = false
+                        startedAtRightEdge = false
+                    }
                 )
             }
     ) {
@@ -923,11 +939,23 @@ private fun FahhBottomBar(
             Surface(
                 onClick = onCameraClick,
                 shape = CircleShape,
-                color = Primary,
-                shadowElevation = 12.dp,
-                modifier = Modifier.size(84.dp)
+                color = Color.Transparent,
+                shadowElevation = 16.dp,
+                border = BorderStroke(2.dp, Color(0xFFFF9B8A)),
+                modifier = Modifier.size(88.dp)
             ) {
-                Icon(Icons.Default.Videocam, contentDescription = "Open camera", tint = Color.White, modifier = Modifier.padding(21.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(Color(0xFFFF8A78), Primary, Color(0xFFA82225))
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Videocam, contentDescription = "Open camera", tint = Color.White, modifier = Modifier.size(40.dp))
+                }
             }
             Text("Camera", color = Color.White.copy(alpha = 0.76f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
@@ -981,7 +1009,7 @@ private fun SwipeEdgeTab(
     val transition = rememberInfiniteTransition(label = "edgeTab")
     val nudge by transition.animateFloat(
         initialValue = 0f,
-        targetValue = if (fromLeft) 4f else -4f,
+            targetValue = if (fromLeft) 2f else -2f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1200),
             repeatMode = RepeatMode.Reverse
@@ -991,21 +1019,21 @@ private fun SwipeEdgeTab(
 
     Surface(
         onClick = onClick,
-        shape = if (fromLeft) RoundedCornerShape(topEnd = 14.dp, bottomEnd = 14.dp)
-        else RoundedCornerShape(topStart = 14.dp, bottomStart = 14.dp),
-        color = Primary.copy(alpha = 0.35f),
+        shape = if (fromLeft) RoundedCornerShape(topEnd = 10.dp, bottomEnd = 10.dp)
+        else RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp),
+        color = Primary.copy(alpha = 0.18f),
         modifier = modifier
             .offset(x = nudge.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 9.dp)
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 7.dp)
         ) {
             Icon(
                 imageVector = if (fromLeft) Icons.Default.ChevronRight else Icons.Default.ChevronLeft,
                 contentDescription = if (fromLeft) "Open new sounds" else "Open sounds",
-                tint = Color.White.copy(alpha = 0.9f),
-                modifier = Modifier.size(15.dp)
+                tint = Color.White.copy(alpha = 0.58f),
+                modifier = Modifier.size(12.dp)
             )
         }
     }

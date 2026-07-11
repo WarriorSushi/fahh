@@ -128,7 +128,7 @@ fun CameraScreen(
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
     ModalNavigationDrawer(
         drawerState = drawerState,
-        gesturesEnabled = !isRecording,
+        gesturesEnabled = true,
         drawerContent = {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                 SidebarMenu(
@@ -236,8 +236,7 @@ fun CameraScreen(
 
                     // Sounds drawer button (top right)
                     IconButton(
-                        onClick = { if (!isRecording) scope.launch { drawerState.open() } },
-                        enabled = !isRecording,
+                        onClick = { scope.launch { drawerState.open() } },
                         modifier = Modifier
                             .premiumGlass(CircleShape, alpha = 0.1f)
                             .size(48.dp)

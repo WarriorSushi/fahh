@@ -78,8 +78,8 @@ fun SidebarMenu(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF0D1117),
-                        Color(0xFF080C12)
+                        Color(0xFF211117),
+                        Color(0xFF13090D)
                     )
                 ),
                 shape = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp)
@@ -239,17 +239,28 @@ fun SidebarMenu(
                             expanded = volumeExpanded,
                             onDismissRequest = { volumeExpanded = false }
                         ) {
-                            Box(modifier = Modifier.size(width = 76.dp, height = 220.dp), contentAlignment = Alignment.Center) {
+                            Column(
+                                modifier = Modifier.width(88.dp).padding(vertical = 10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "${(volume * 100).toInt()}%",
+                                    color = Primary,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 14.sp
+                                )
+                                Box(modifier = Modifier.size(width = 88.dp, height = 320.dp), contentAlignment = Alignment.Center) {
                                 Slider(
                                     value = volume,
                                     onValueChange = onVolumeChange,
-                                    modifier = Modifier.width(190.dp).graphicsLayer { rotationZ = -90f },
+                                    modifier = Modifier.width(290.dp).graphicsLayer { rotationZ = -90f },
                                     colors = SliderDefaults.colors(
                                         thumbColor = Color.White,
                                         activeTrackColor = Primary,
                                         inactiveTrackColor = Color.White.copy(alpha = 0.2f)
                                     )
                                 )
+                            }
                             }
                         }
                     }
