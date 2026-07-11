@@ -37,6 +37,7 @@ Every soundboard app lets you press buttons alone in your room. Fahh plays the s
 - **3D button** — spring physics, haptic feedback, particle burst
 - **Trim & rotate** — edit clips without leaving the app
 - **Instant share** — TikTok, Reels, Shorts, Snapchat, WhatsApp
+- **Made with Fahh** — a small corner watermark helps shared clips lead people back to the app
 - **No account, no sign-up, works offline**
 
 ---
@@ -51,6 +52,7 @@ Every soundboard app lets you press buttons alone in your room. Fahh plays the s
 - DataStore for preferences
 - Google AdMob rewarded ads for optional sound and custom-slot unlocks
 - MediaMuxer for video trimming with rotation metadata
+- Media3 Transformer for fail-safe video watermarking
 
 Min SDK 24 · Target SDK 35
 

@@ -102,6 +102,11 @@ dependencies {
     implementation("androidx.camera:camera-extensions:${camerax_version}")
     implementation("com.google.guava:guava:31.1-android")
 
+    // Media3 Transformer for the small branded overlay on recorded clips.
+    val media3Version = "1.5.0"
+    implementation("androidx.media3:media3-transformer:$media3Version")
+    implementation("androidx.media3:media3-effect:$media3Version")
+
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     

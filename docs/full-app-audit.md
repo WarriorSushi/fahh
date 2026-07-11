@@ -274,7 +274,7 @@ Fahh does not look generically AI-generated. The hero control, playful copy, and
 
 The findings above intentionally describe the audited baseline at `f92d2a4`. The following safe fixes were implemented afterward:
 
-- **P1-01 fixed:** removed forced watermark export, its dead preference, and the Media3 export dependency. New clips go directly to review without branding.
+- **P1-01 superseded by owner decision on July 12:** the store promise was corrected and a small mandatory Fahh watermark was restored. Export is retained by `CameraViewModel`, the branded result is the single review/gallery handoff, and any transformer failure falls back to the intact source recording.
 - **P1-02 partially fixed:** removed the source-deleting export race and moved finalized-file delivery into retained CameraViewModel state. A single canonical MediaStore/app-file design remains future work.
 - **P1-03 fixed:** system and top-bar Back now provide feedback instead of leaving during recording or saving.
 - **P1-04 fixed for configuration/process recreation:** current video path uses saveable state and is validated by existing Share/Trim guards.
@@ -288,6 +288,7 @@ The findings above intentionally describe the audited baseline at `f92d2a4`. The
 - **P2-05 partially fixed:** malformed persisted activity dates no longer crash parsing.
 - **P2-06 fixed in repository copy:** sound count, camera-switch wording, size claim, README ad model, and in-app version label now match source.
 - **P3-02 fixed:** gallery and custom-audio metadata retrievers now release on exception paths.
+- **July 12 interaction follow-up:** custom trim preview now waits for its asynchronous seek before playback; bottom-anchored edit, onboarding, camera, share, trim, and coming-soon actions respect navigation-bar insets; the transient New sounds prompt is a persistent one-time star cue; combo titles use fixed three-second windows and continue after CHEATER; streak date behavior is covered by unit tests.
 
 Still release-blocking after code remediation: P1-06 long-clip playback, P1-07 rights evidence, P1-08 public privacy/Data Safety synchronization, real-device camera/media verification, and the signed minified internal release check.
 
@@ -304,7 +305,7 @@ Still release-blocking after code remediation: P1-06 long-clip playback, P1-07 r
 ## Recommended release order
 
 1. Fix deterministic audio playback and active-recording/save navigation.
-2. Remove or make watermark export truly opt-in, then make video state recreation-safe.
+2. Verify mandatory watermark placement and original-file fallback on real devices, then make video state recreation-safe.
 3. Fix the highest-impact accessibility/responsive issues and custom-recorder lifecycle.
 4. Update public privacy policy, add UMP privacy options, and synchronize Data Safety.
 5. Obtain release-grade rights evidence or remove undocumented recognizable clips.

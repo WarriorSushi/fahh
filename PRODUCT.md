@@ -33,6 +33,7 @@ Playful, physical, generous. The voice is self-aware, warm, concise, and a littl
 4. Free means complete. Core playback, recording, editing, sharing, and sound discovery must remain financially accessible; optional rewarded unlocks may add convenience without requiring payment.
 5. Privacy and trust are product features. Keep video and custom audio local by default, ask only for necessary permissions, and explain any data collection plainly.
 6. Earned familiarity beats novelty. Use standard Android navigation, billing, search, filtering, and accessibility patterns; reserve personality for copy, sound, physical feedback, and celebrations.
+7. Let shared clips carry the name. New reaction videos include a small, unobtrusive Fahh watermark for attribution. Keep it away from faces and captions, and never let a branding/export failure block or destroy the user's recording.
 
 ## Accessibility & Inclusion
 

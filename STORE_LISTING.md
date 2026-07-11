@@ -49,7 +49,7 @@ A giant 3D button that actually feels real. It sinks when you press it. Haptic f
  ▸ Trim clips inside the app
  ▸ Rotate videos
  ▸ Share to TikTok, Reels, Shorts, Snapchat, WhatsApp
- ▸ No watermark
+ ▸ Small Made with Fahh watermark
  ▸ No account needed
 
 ⚡ ZERO FRICTION
@@ -142,7 +142,7 @@ Add short captions using Canva (free) — white bold text, 1 line max.
 | 1 | Main screen, big red button | "One satisfying button." |
 | 2 | Camera mode, recording with sound button visible | "Record reactions with live sounds." |
 | 3 | Sidebar open, all 12 sounds visible | "12 meme sounds. More coming." |
-| 4 | Share screen after recording | "Share anywhere. No watermark." |
+| 4 | Share screen after recording | "Share anywhere. Made with Fahh." |
 | 5 | Trim/edit screen | "Trim and rotate in-app." |
 | 6 | Button mid-press with particles | "That press though." |
 

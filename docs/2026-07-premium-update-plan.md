@@ -9,6 +9,8 @@
 
 > **Implementation update, July 11, 2026:** “My Sounds” is now called **Custom sounds** in the app. The prior five-slot proposal is superseded: each saved custom sound requires one user-chosen rewarded ad to add its slot, with no artificial five-sound limit. Existing early one-time unlocks are grandfathered as five local slots. All remaining references to a five-slot or Pro model below are historical exploration, not current product requirements.
 
+> **Product decision update, July 12, 2026:** New reaction videos now receive a small, unobtrusive Fahh watermark so shared clips can drive app discovery. This explicit owner decision supersedes the optional/no-watermark recommendations later in this historical plan. Branding must stay clear of likely face/caption areas, and watermark export failure must fall back to the intact original recording rather than blocking save, review, gallery discovery, or sharing.
+
 ## 1. Executive recommendation
 
 ## 1.1 Implemented 1.1.0 scope and deliberate deferrals

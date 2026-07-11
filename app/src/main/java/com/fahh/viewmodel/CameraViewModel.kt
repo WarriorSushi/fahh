@@ -17,6 +17,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewModelScope
 import com.fahh.camera.CameraManager
+import com.fahh.utils.FahhWatermarkExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import java.io.IOException
@@ -35,7 +36,8 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class CameraViewModel @Inject constructor(
     application: Application,
-    private val cameraManager: CameraManager
+    private val cameraManager: CameraManager,
+    private val watermarkExporter: FahhWatermarkExporter
 ) : AndroidViewModel(application) {
 
     private val _cameraSelector = MutableStateFlow(CameraSelector.DEFAULT_BACK_CAMERA)
@@ -91,10 +93,10 @@ class CameraViewModel @Inject constructor(
     ) {
         if (_isRecording.value) return
 
-        val name = "fahh_" +
+        val timestamp =
             SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US).format(System.currentTimeMillis())
 
-        val outputFile = File(getOutputDirectory(), "$name.mp4")
+        val outputFile = File(getOutputDirectory(), "capture_$timestamp.mp4")
         val outputOptions = FileOutputOptions.Builder(outputFile).build()
 
         try {
@@ -125,24 +127,13 @@ class CameraViewModel @Inject constructor(
                             if (!recordEvent.hasError()) {
                                 val isFileValid = outputFile.exists() && outputFile.length() > 4_096
                                 if (!isFileValid) {
+                                    _isSavingRecording.value = false
                                     onError("Recording failed. Output file was not created correctly.")
                                     return@start
                                 }
 
-                                _savedVideo.value = outputFile
-                                viewModelScope.launch(Dispatchers.IO) {
-                                    val copiedToGallery = copyRecordingToGallery(outputFile)
-                                    if (!copiedToGallery) {
-                                        withContext(Dispatchers.Main) {
-                                            MediaScannerConnection.scanFile(
-                                                getApplication(),
-                                                arrayOf(outputFile.absolutePath),
-                                                arrayOf("video/mp4"),
-                                                null
-                                            )
-                                        }
-                                    }
-                                }
+                                _isSavingRecording.value = true
+                                exportAndPublishRecording(outputFile, timestamp)
                             } else {
                                 _isSavingRecording.value = false
                                 onError("Recording failed (code ${recordEvent.error}). Please try again.")
@@ -188,6 +179,40 @@ class CameraViewModel @Inject constructor(
             moviesDir
         } else {
             app.filesDir
+        }
+    }
+
+    private fun exportAndPublishRecording(sourceFile: File, timestamp: String) {
+        val brandedFile = File(getOutputDirectory(), "fahh_$timestamp.mp4")
+        watermarkExporter.export(
+            inputFile = sourceFile,
+            outputFile = brandedFile,
+            onSuccess = {
+                sourceFile.delete()
+                publishRecording(brandedFile)
+            },
+            onError = {
+                brandedFile.delete()
+                // A branding failure must never cost the user their recording.
+                publishRecording(sourceFile)
+            }
+        )
+    }
+
+    private fun publishRecording(file: File) {
+        _savedVideo.value = file
+        viewModelScope.launch(Dispatchers.IO) {
+            val copiedToGallery = copyRecordingToGallery(file)
+            if (!copiedToGallery) {
+                withContext(Dispatchers.Main) {
+                    MediaScannerConnection.scanFile(
+                        getApplication(),
+                        arrayOf(file.absolutePath),
+                        arrayOf("video/mp4"),
+                        null
+                    )
+                }
+            }
         }
     }
 
