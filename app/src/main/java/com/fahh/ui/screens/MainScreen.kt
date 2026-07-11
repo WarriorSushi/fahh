@@ -570,30 +570,33 @@ private fun MainContent(
             .fillMaxSize()
             .background(Background)
             .pointerInput(Unit) {
-                var startedAtLeftEdge = false
-                var startedAtRightEdge = false
+                var horizontalTravel = 0f
+                var drawerOpened = false
                 detectHorizontalDragGestures(
-                    onDragStart = { offset ->
-                        startedAtLeftEdge = offset.x <= 48.dp.toPx()
-                        startedAtRightEdge = offset.x >= size.width - 48.dp.toPx()
+                    onDragStart = {
+                        horizontalTravel = 0f
+                        drawerOpened = false
                     },
                     onHorizontalDrag = { _, dragAmount ->
-                        if (startedAtLeftEdge && dragAmount > 0f) {
+                        if (drawerOpened) return@detectHorizontalDragGestures
+                        horizontalTravel += dragAmount
+                        // The home screen has no horizontal content to protect. A deliberate
+                        // side swipe can therefore begin away from the physical screen edge.
+                        if (horizontalTravel >= 42.dp.toPx()) {
                             onNewSoundsClick()
-                            startedAtLeftEdge = false
-                        }
-                        if (startedAtRightEdge && dragAmount < 0f) {
+                            drawerOpened = true
+                        } else if (horizontalTravel <= -42.dp.toPx()) {
                             onMenuClick()
-                            startedAtRightEdge = false
+                            drawerOpened = true
                         }
                     },
                     onDragEnd = {
-                        startedAtLeftEdge = false
-                        startedAtRightEdge = false
+                        horizontalTravel = 0f
+                        drawerOpened = false
                     },
                     onDragCancel = {
-                        startedAtLeftEdge = false
-                        startedAtRightEdge = false
+                        horizontalTravel = 0f
+                        drawerOpened = false
                     }
                 )
             }
