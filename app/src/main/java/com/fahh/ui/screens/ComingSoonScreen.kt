@@ -49,6 +49,7 @@ fun ComingSoonScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
         ) {
             // Header

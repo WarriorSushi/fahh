@@ -123,6 +123,17 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
         val file = File(filePath)
         if (!file.exists() || endMs <= startMs) return
         releaseCustomPlayer()
+        val selectionDurationMs = (endMs - startMs).coerceAtLeast(120L)
+        val startSelection: (MediaPlayer) -> Unit = { player ->
+            if (customPlayer === player) {
+                player.start()
+                val stop = Runnable {
+                    if (customPlayer === player) releaseCustomPlayer()
+                }
+                customStopAction = stop
+                mainHandler.postDelayed(stop, selectionDurationMs)
+            }
+        }
         customPlayer = MediaPlayer().apply {
             setAudioAttributes(
                 AudioAttributes.Builder()
@@ -133,14 +144,10 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
             setDataSource(file.absolutePath)
             setVolume(volume, volume)
             setOnPreparedListener { player ->
-                player.seekTo(startMs.toInt())
-                player.start()
-                val stop = Runnable {
-                    if (customPlayer === player) releaseCustomPlayer()
-                }
-                customStopAction = stop
-                mainHandler.postDelayed(stop, (endMs - startMs).coerceAtLeast(120L))
+                if (startMs <= 0L) startSelection(player)
+                else player.seekTo(startMs.toInt())
             }
+            setOnSeekCompleteListener(startSelection)
             setOnCompletionListener { releaseCustomPlayer() }
             setOnErrorListener { _, _, _ -> releaseCustomPlayer(); true }
             prepareAsync()

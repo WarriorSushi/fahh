@@ -86,6 +86,7 @@ fun OnboardingScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
                 .padding(bottom = 48.dp, start = 24.dp, end = 24.dp)
         ) {
             // Page dots

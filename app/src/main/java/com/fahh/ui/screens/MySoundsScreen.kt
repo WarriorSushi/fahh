@@ -11,6 +11,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -409,7 +411,15 @@ private fun EditSoundSheet(
     var name by remember(sound.id) { mutableStateOf(sound.name) }
     var range by remember(sound.id, durationMs) { mutableStateOf(0f..durationMs.toFloat()) }
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = SurfaceHigh) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 30.dp)) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .navigationBarsPadding()
+                .imePadding()
+                .padding(bottom = 20.dp)
+        ) {
             Text("Edit custom sound", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Black)
             Text("Drag the handles to keep the best part. The saved sound stays on your device.", color = Color.White.copy(alpha = 0.56f), fontSize = 12.sp, modifier = Modifier.padding(top = 3.dp))
             OutlinedTextField(value = name, onValueChange = { name = it.take(24) }, label = { Text("Sound name") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 14.dp))

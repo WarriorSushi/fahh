@@ -51,7 +51,10 @@ fun UpdateOnboardingScreen(onFinish: () -> Unit) {
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp, start = 24.dp, end = 24.dp)
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 48.dp, start = 24.dp, end = 24.dp)
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 repeat(updateImages.size) { index ->

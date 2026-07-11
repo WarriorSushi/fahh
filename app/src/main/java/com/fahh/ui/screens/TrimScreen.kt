@@ -65,7 +65,13 @@ fun TrimScreen(
     BackHandler { requestBack() }
 
     Box(modifier = Modifier.fillMaxSize().background(Background)) {
-        Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .navigationBarsPadding()
+                .padding(16.dp)
+        ) {
             // Custom HUD
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),

@@ -318,6 +318,7 @@ fun CameraScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .navigationBarsPadding()
                         .padding(bottom = 32.dp, start = 24.dp, end = 24.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
