@@ -69,6 +69,7 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
     var error by remember { mutableStateOf<String?>(null) }
     var rewardedAd by remember { mutableStateOf<RewardedAd?>(null) }
     var loadingAd by remember { mutableStateOf(false) }
+    var showSlotRequest by remember { mutableStateOf(false) }
 
     fun loadRewardedAd() {
         if (loadingAd || rewardedAd != null || !ConsentManager.canRequestAds(context)) return
@@ -86,10 +87,14 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
             soundViewModel.selectSound(it)
             lastSavedId = it.id
             draftName = "My Fahh"
+            showSlotRequest = false
         }.onFailure { error = it.message }
     }
 
     LaunchedEffect(Unit) { loadRewardedAd() }
+    LaunchedEffect(customSoundSlots, customSounds.size) {
+        if (customSounds.size < customSoundSlots) showSlotRequest = false
+    }
     LaunchedEffect(recording) {
         if (!recording) {
             secondsRemaining = 0
@@ -178,7 +183,8 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
                         onDiscard = { soundViewModel.cancelCustomSoundRecording() }
                     )
                 }
-            } else {
+            }
+            if (showSlotRequest) {
                 item("locked-slot") {
                     LockedSlotCard(
                         loading = loadingAd,
@@ -187,8 +193,10 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
                 }
             }
 
-            item("add-slot") {
-                GhostAddCard(onClick = ::unlockSlotWithReward)
+            if (!showSlotRequest) {
+                item("add-slot") {
+                    GhostAddCard(onClick = { showSlotRequest = true })
+                }
             }
             error?.let { message ->
                 item("error") { Text(message, color = Color(0xFFFF8A80), fontSize = 12.sp) }
@@ -210,6 +218,7 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
         EditSoundSheet(
             sound = sound,
             onDismiss = { editingSound = null },
+            onPreview = { startMs, endMs -> soundViewModel.playCustomSoundSelection(sound, startMs, endMs) },
             onSave = { name, startMs, endMs ->
                 soundViewModel.editCustomSound(sound.id, name, startMs, endMs)
                     .onFailure { error = it.message }
@@ -362,7 +371,12 @@ private fun SoundWaveform(active: Boolean, modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EditSoundSheet(sound: Sound, onDismiss: () -> Unit, onSave: (String, Long, Long) -> Unit) {
+private fun EditSoundSheet(
+    sound: Sound,
+    onDismiss: () -> Unit,
+    onPreview: (Long, Long) -> Unit,
+    onSave: (String, Long, Long) -> Unit
+) {
     val durationMs = remember(sound.filePath) { readAudioDurationMs(sound.filePath) }
     var name by remember(sound.id) { mutableStateOf(sound.name) }
     var range by remember(sound.id, durationMs) { mutableStateOf(0f..durationMs.toFloat()) }
@@ -372,7 +386,11 @@ private fun EditSoundSheet(sound: Sound, onDismiss: () -> Unit, onSave: (String,
             Text("Drag the handles to keep the best part. The saved sound stays on your device.", color = Color.White.copy(alpha = 0.56f), fontSize = 12.sp, modifier = Modifier.padding(top = 3.dp))
             OutlinedTextField(value = name, onValueChange = { name = it.take(24) }, label = { Text("Sound name") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 14.dp))
             Text("Keep ${formatAudioTime(range.start)} – ${formatAudioTime(range.endInclusive)}", color = Primary, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.padding(top = 16.dp))
-            SoundWaveform(active = false, modifier = Modifier.fillMaxWidth().height(54.dp).padding(top = 6.dp))
+            TrimWaveform(
+                selectedRange = range,
+                durationMs = durationMs.toFloat(),
+                modifier = Modifier.fillMaxWidth().height(54.dp).padding(top = 6.dp)
+            )
             RangeSlider(
                 value = range,
                 onValueChange = { selected ->
@@ -382,11 +400,45 @@ private fun EditSoundSheet(sound: Sound, onDismiss: () -> Unit, onSave: (String,
                 colors = SliderDefaults.colors(thumbColor = Primary, activeTrackColor = Primary),
                 modifier = Modifier.fillMaxWidth()
             )
+            OutlinedButton(
+                onClick = { onPreview(range.start.toLong(), range.endInclusive.toLong()) },
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp).height(46.dp)
+            ) {
+                Icon(Icons.Default.PlayArrow, null)
+                Spacer(Modifier.width(7.dp))
+                Text("Play selection", fontWeight = FontWeight.Bold)
+            }
             Button(
                 onClick = { onSave(name, range.start.toLong(), range.endInclusive.toLong()) },
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp).height(50.dp)
             ) { Text("Save changes", fontWeight = FontWeight.Bold) }
         }
+    }
+}
+
+@Composable
+private fun TrimWaveform(selectedRange: ClosedFloatingPointRange<Float>, durationMs: Float, modifier: Modifier = Modifier) {
+    Canvas(modifier.clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.055f))) {
+        val bars = 44
+        val gap = size.width / (bars * 2f)
+        repeat(bars) { index ->
+            val heightFraction = 0.24f + ((index * 11 % 19) / 24f)
+            val height = size.height * heightFraction
+            val x = gap + index * gap * 2
+            drawLine(
+                color = Color.White.copy(alpha = 0.42f),
+                start = androidx.compose.ui.geometry.Offset(x, (size.height - height) / 2f),
+                end = androidx.compose.ui.geometry.Offset(x, (size.height + height) / 2f),
+                strokeWidth = gap.coerceAtMost(4.dp.toPx()),
+                cap = StrokeCap.Round
+            )
+        }
+        val startX = size.width * (selectedRange.start / durationMs)
+        val endX = size.width * (selectedRange.endInclusive / durationMs)
+        drawRect(Color(0xD90A0C12), topLeft = androidx.compose.ui.geometry.Offset.Zero, size = androidx.compose.ui.geometry.Size(startX, size.height))
+        drawRect(Color(0xD90A0C12), topLeft = androidx.compose.ui.geometry.Offset(endX, 0f), size = androidx.compose.ui.geometry.Size(size.width - endX, size.height))
+        drawLine(Primary, androidx.compose.ui.geometry.Offset(startX, 2.dp.toPx()), androidx.compose.ui.geometry.Offset(startX, size.height - 2.dp.toPx()), 2.dp.toPx(), StrokeCap.Round)
+        drawLine(Primary, androidx.compose.ui.geometry.Offset(endX, 2.dp.toPx()), androidx.compose.ui.geometry.Offset(endX, size.height - 2.dp.toPx()), 2.dp.toPx(), StrokeCap.Round)
     }
 }
 

@@ -303,8 +303,9 @@ fun SoundButton(
             modifier = Modifier
                 .size(buttonSize * 1.6f)
                 .align(Alignment.TopCenter)
-                // Keep the visual burst centered on the moving button face.
-                .offset(y = -(buttonSize * 0.3f) + sinkDistance)
+                // The visible red button includes its lower wall, so its perceived centre
+                // sits half a wall lower than the circular face's layout centre.
+                .offset(y = -(buttonSize * 0.3f) + (totalDepth * 0.5f) + sinkDistance)
         ) {
             val cx = size.width / 2
             val cy = size.height / 2

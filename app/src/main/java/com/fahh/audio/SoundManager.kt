@@ -4,6 +4,8 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.SoundPool
+import android.os.Handler
+import android.os.Looper
 import com.fahh.R
 import com.fahh.data.model.Sound
 import java.io.File
@@ -17,6 +19,8 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
     private val soundPool: SoundPool
     private val soundMap = mutableMapOf<Int, Int>()
     private var customPlayer: MediaPlayer? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var customStopAction: Runnable? = null
     
     init {
         val audioAttributes = AudioAttributes.Builder()
@@ -78,7 +82,7 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
     private fun playCustomSound(filePath: String, volume: Float) {
         val file = File(filePath)
         if (!file.exists()) return
-        customPlayer?.release()
+        releaseCustomPlayer()
         customPlayer = MediaPlayer().apply {
             setAudioAttributes(
                 AudioAttributes.Builder()
@@ -102,9 +106,44 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
         }
     }
 
-    fun release() {
+    /** Plays only the in-progress trim selection, before it is saved. */
+    fun playCustomSelection(filePath: String, startMs: Long, endMs: Long, volume: Float = 1.0f) {
+        val file = File(filePath)
+        if (!file.exists() || endMs <= startMs) return
+        releaseCustomPlayer()
+        customPlayer = MediaPlayer().apply {
+            setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+            setDataSource(file.absolutePath)
+            setVolume(volume, volume)
+            setOnPreparedListener { player ->
+                player.seekTo(startMs.toInt())
+                player.start()
+                val stop = Runnable {
+                    if (customPlayer === player) releaseCustomPlayer()
+                }
+                customStopAction = stop
+                mainHandler.postDelayed(stop, (endMs - startMs).coerceAtLeast(120L))
+            }
+            setOnCompletionListener { releaseCustomPlayer() }
+            setOnErrorListener { _, _, _ -> releaseCustomPlayer(); true }
+            prepareAsync()
+        }
+    }
+
+    private fun releaseCustomPlayer() {
+        customStopAction?.let(mainHandler::removeCallbacks)
+        customStopAction = null
         customPlayer?.release()
         customPlayer = null
+    }
+
+    fun release() {
+        releaseCustomPlayer()
         soundPool.release()
     }
 }

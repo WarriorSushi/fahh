@@ -197,6 +197,10 @@ class SoundViewModel @Inject constructor(
         soundManager.playSound(sound, volume.value)
     }
 
+    fun playCustomSoundSelection(sound: Sound, startMs: Long, endMs: Long) {
+        sound.filePath?.let { soundManager.playCustomSelection(it, startMs, endMs, volume.value) }
+    }
+
     fun startCustomSoundRecording(): Result<Unit> = runCatching {
         check(customSoundRepository.sounds.value.size < customSoundSlots.value) {
             "Watch an ad to add a custom sound slot first."
