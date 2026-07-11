@@ -59,7 +59,11 @@ class MainActivity : ComponentActivity() {
                 // Wait for DataStore to resolve, then navigate once
                 LaunchedEffect(Unit) {
                     val firstRun = soundViewModel.isFirstRunResolved()
-                    val startRoute = if (firstRun) Screen.Onboarding.route else Screen.Main.route
+                    val startRoute = when {
+                        firstRun -> Screen.Onboarding.route
+                        soundViewModel.shouldShowUpdateOnboarding() -> Screen.UpdateOnboarding.route
+                        else -> Screen.Main.route
+                    }
                     navController.navigate(startRoute) {
                         popUpTo(Screen.Loading.route) { inclusive = true }
                     }
@@ -114,6 +118,21 @@ class MainActivity : ComponentActivity() {
                             soundViewModel.completeOnboarding()
                             navController.navigate(Screen.Main.route) {
                                 popUpTo(Screen.Onboarding.route) { inclusive = true }
+                            }
+                        })
+                    }
+
+                    composable(
+                        Screen.UpdateOnboarding.route,
+                        enterTransition = slideLeft,
+                        exitTransition = slideOutLeft,
+                        popEnterTransition = slideRight,
+                        popExitTransition = slideOutRight
+                    ) {
+                        UpdateOnboardingScreen(onFinish = {
+                            soundViewModel.completeUpdateOnboarding()
+                            navController.navigate(Screen.Main.route) {
+                                popUpTo(Screen.UpdateOnboarding.route) { inclusive = true }
                             }
                         })
                     }

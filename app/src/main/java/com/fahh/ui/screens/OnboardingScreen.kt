@@ -32,7 +32,9 @@ private val onboardingImages = listOf(
     R.drawable.onboard_wasting_time,
     R.drawable.onboard_explain,
     R.drawable.onboard_button,
-    R.drawable.onboard_points
+    R.drawable.onboard_points,
+    R.drawable.onboard_update_new,
+    R.drawable.onboard_update_custom
 )
 
 @Composable
@@ -116,7 +118,7 @@ fun OnboardingScreen(
 }
 
 @Composable
-private fun TactileOnboardingButton(onClick: () -> Unit, text: String, isPrimary: Boolean) {
+internal fun TactileOnboardingButton(onClick: () -> Unit, text: String, isPrimary: Boolean) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val pressDepth by animateDpAsState(

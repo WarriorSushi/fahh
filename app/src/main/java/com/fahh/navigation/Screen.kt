@@ -3,6 +3,7 @@ package com.fahh.navigation
 sealed class Screen(val route: String) {
     object Loading : Screen("loading")
     object Onboarding : Screen("onboarding")
+    object UpdateOnboarding : Screen("update_onboarding")
     object Main : Screen("main")
     object Camera : Screen("camera")
     object Share : Screen("share")

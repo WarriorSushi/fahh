@@ -31,6 +31,10 @@ class SoundViewModel @Inject constructor(
     private val customSoundRecorder: CustomSoundRecorder
 ) : AndroidViewModel(application) {
 
+    companion object {
+        private const val CURRENT_UPDATE_ONBOARDING_VERSION = 1
+    }
+
     val volume = settingsRepository.volumeFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -92,6 +96,9 @@ class SoundViewModel @Inject constructor(
 
     /** Reads the actual DataStore value (not the stateIn initial). */
     suspend fun isFirstRunResolved(): Boolean = settingsRepository.isFirstRunFlow.first()
+
+    suspend fun shouldShowUpdateOnboarding(): Boolean =
+        settingsRepository.updateOnboardingVersionFlow.first() < CURRENT_UPDATE_ONBOARDING_VERSION
 
     private val _selectedSound = MutableStateFlow(SoundCatalog.defaultSelectedSound)
     val selectedSound: StateFlow<Sound> = _selectedSound.asStateFlow()
@@ -159,6 +166,13 @@ class SoundViewModel @Inject constructor(
     fun completeOnboarding() {
         viewModelScope.launch {
             settingsRepository.setOnboardingCompleted()
+            settingsRepository.setUpdateOnboardingVersion(CURRENT_UPDATE_ONBOARDING_VERSION)
+        }
+    }
+
+    fun completeUpdateOnboarding() {
+        viewModelScope.launch {
+            settingsRepository.setUpdateOnboardingVersion(CURRENT_UPDATE_ONBOARDING_VERSION)
         }
     }
 

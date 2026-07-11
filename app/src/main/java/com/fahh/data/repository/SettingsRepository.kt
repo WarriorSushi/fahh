@@ -41,6 +41,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val HIGHEST_COMBO_TIER = intPreferencesKey("highest_combo_tier")
         val MY_SOUNDS_UNLOCKED = androidx.datastore.preferences.core.booleanPreferencesKey("my_sounds_unlocked")
         val CUSTOM_SOUND_SLOTS = intPreferencesKey("custom_sound_slots")
+        val UPDATE_ONBOARDING_VERSION = intPreferencesKey("update_onboarding_version")
     }
 
     val volumeFlow: Flow<Float> = context.dataStore.data.map { preferences ->
@@ -60,6 +61,16 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     suspend fun setOnboardingCompleted() {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.FIRST_RUN] = false
+        }
+    }
+
+    val updateOnboardingVersionFlow: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.UPDATE_ONBOARDING_VERSION] ?: 0
+    }
+
+    suspend fun setUpdateOnboardingVersion(version: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.UPDATE_ONBOARDING_VERSION] = version
         }
     }
 
