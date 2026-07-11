@@ -11,6 +11,9 @@ interface SoundDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertMissing(sounds: List<SoundEntity>)
 
+    @Query("DELETE FROM sounds WHERE soundId NOT IN (:activeSoundIds)")
+    suspend fun removeCatalogSoundsNoLongerShipped(activeSoundIds: Set<String>)
+
     @Query(
         """
         UPDATE sounds

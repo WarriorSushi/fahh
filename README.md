@@ -32,7 +32,7 @@ Every soundboard app lets you press buttons alone in your room. Fahh plays the s
 
 ### Features
 
-- **36 bundled reaction sounds** with four free starters and optional one-sound rewarded unlocks
+- **35 bundled reaction sounds** with four free starters and optional one-sound rewarded unlocks
 - **Live sound + camera** — sound plays through speaker during recording
 - **3D button** — spring physics, haptic feedback, particle burst
 - **Trim & rotate** — edit clips without leaving the app

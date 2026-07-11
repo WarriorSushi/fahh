@@ -32,6 +32,18 @@ class SoundCatalogTest {
     }
 
     @Test
+    fun `retired long sound is absent and renamed sounds keep stable IDs`() {
+        assertTrue(SoundCatalog.sounds.none { it.id == "sad_violin" })
+
+        val labelsById = SoundCatalog.sounds.associate { it.id to it.name }
+        assertEquals("Cina", labelsById["john_cena"])
+        assertEquals("Taker", labelsById["undertaker_bell"])
+        assertEquals("Hurt", labelsById["minecraft_hurt"])
+        assertEquals("Oof", labelsById["roblox_oof"])
+        assertEquals("Wasted", labelsById["gta_wasted"])
+    }
+
+    @Test
     fun `intentionally removed staged sounds stay out of the bundled catalog`() {
         val forbiddenFragments = setOf(
             "another_one_dj_khaled",

@@ -19,6 +19,7 @@ class SoundRepository @Inject constructor(private val soundDao: SoundDao) {
     /** Adds newly bundled sounds and refreshes metadata without relocking earned sounds. */
     suspend fun syncCatalog(sounds: List<Sound>) {
         val entries = sounds.map { it.toEntity() }
+        soundDao.removeCatalogSoundsNoLongerShipped(entries.map { it.soundId }.toSet())
         soundDao.insertMissing(entries)
         entries.forEach { sound ->
             soundDao.updateCatalogMetadata(

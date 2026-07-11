@@ -128,6 +128,11 @@ class SoundViewModel @Inject constructor(
             val lastName = settingsRepository.favoriteSoundFlow.first()
             val legacySoundId = when (lastName) {
                 "Romance Sax" -> "romantic"
+                "GTA Wasted" -> "gta_wasted"
+                "John Cena" -> "john_cena"
+                "Minecraft Hurt" -> "minecraft_hurt"
+                "Roblox Oof" -> "roblox_oof"
+                "Undertaker Bell" -> "undertaker_bell"
                 else -> null
             }
             val sounds = combine(repository.allSounds, customSoundRepository.sounds) { catalog, custom ->

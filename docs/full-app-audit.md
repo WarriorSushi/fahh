@@ -289,6 +289,7 @@ The findings above intentionally describe the audited baseline at `f92d2a4`. The
 - **P2-06 fixed in repository copy:** sound count, camera-switch wording, size claim, README ad model, and in-app version label now match source.
 - **P3-02 fixed:** gallery and custom-audio metadata retrievers now release on exception paths.
 - **July 12 interaction follow-up:** locked sound cards permit exactly two preview plays before their separate unlock action; custom trim preview starts only after seeking and stops at the selected end position; Edit custom sound is a centered safe-area dialog; all bottom-anchored screen roots and overlays respect navigation-bar insets; New sounds entry points always remain available, with only their first-open highlight becoming subdued; combo titles use fixed three-second windows and continue after CHEATER; streak date behavior is covered by unit tests.
+- **July 12 catalog follow-up:** the 22.46-second Sad Violin clip was removed from source, catalog, existing-install sync, and the rights ledger. Long bundled clips still require real-device verification or a dedicated long-audio path before production.
 
 Still release-blocking after code remediation: P1-06 long-clip playback, P1-07 rights evidence, P1-08 public privacy/Data Safety synchronization, real-device camera/media verification, and the signed minified internal release check.
 
