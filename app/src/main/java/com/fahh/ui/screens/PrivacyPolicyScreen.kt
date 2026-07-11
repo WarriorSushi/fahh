@@ -54,6 +54,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .navigationBarsPadding()
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
         ) {

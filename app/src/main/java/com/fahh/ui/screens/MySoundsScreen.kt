@@ -37,6 +37,8 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.fahh.BuildConfig
 import com.fahh.data.model.Sound
 import com.fahh.ui.theme.Background
@@ -177,8 +179,11 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
         }
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .navigationBarsPadding(),
+            contentPadding = PaddingValues(start = 18.dp, top = 8.dp, end = 18.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
@@ -399,7 +404,6 @@ private fun SoundWaveform(active: Boolean, modifier: Modifier = Modifier) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EditSoundSheet(
     sound: Sound,
@@ -410,16 +414,27 @@ private fun EditSoundSheet(
     val durationMs = remember(sound.filePath) { readAudioDurationMs(sound.filePath) }
     var name by remember(sound.id) { mutableStateOf(sound.name) }
     var range by remember(sound.id, durationMs) { mutableStateOf(0f..durationMs.toFloat()) }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = SurfaceHigh) {
-        Column(
-            Modifier
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            color = SurfaceHigh,
+            shape = RoundedCornerShape(24.dp),
+            tonalElevation = 6.dp,
+            modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .fillMaxHeight(0.82f)
                 .padding(horizontal = 20.dp)
                 .navigationBarsPadding()
                 .imePadding()
-                .padding(bottom = 20.dp)
         ) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 22.dp)
+            ) {
             Text("Edit custom sound", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Black)
             Text("Drag the handles to keep the best part. The saved sound stays on your device.", color = Color.White.copy(alpha = 0.56f), fontSize = 12.sp, modifier = Modifier.padding(top = 3.dp))
             OutlinedTextField(value = name, onValueChange = { name = it.take(24) }, label = { Text("Sound name") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 14.dp))
@@ -448,8 +463,9 @@ private fun EditSoundSheet(
             }
             Button(
                 onClick = { onSave(name, range.start.toLong(), range.endInclusive.toLong()) },
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp).height(50.dp)
+                modifier = Modifier.fillMaxWidth().padding(top = 14.dp).height(50.dp)
             ) { Text("Save changes", fontWeight = FontWeight.Bold) }
+        }
         }
     }
 }

@@ -39,10 +39,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 
 import androidx.compose.foundation.shape.CircleShape
@@ -84,7 +84,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -183,7 +182,7 @@ fun MainScreen(
     var isRewardedAdLoading by remember { mutableStateOf(false) }
     var adErrorText by remember { mutableStateOf<String?>(null) }
     var sidebarNotice by remember { mutableStateOf<SidebarNotice?>(null) }
-    val lockedPreviewCounts = remember { mutableStateMapOf<Int, Int>() }
+    val lockedPreviewGate = remember { LockedSoundPreviewGate() }
 
     fun showSidebarNotice(message: String) {
         sidebarNotice = SidebarNotice(token = System.nanoTime(), message = message)
@@ -191,6 +190,21 @@ fun MainScreen(
 
     fun clearSidebarNotice() {
         sidebarNotice = null
+    }
+
+    fun previewSound(sound: Sound) {
+        if (!sound.isLocked) {
+            clearSidebarNotice()
+            viewModel.playSoundPreview(sound)
+            return
+        }
+
+        if (lockedPreviewGate.tryConsume(sound.id)) {
+            clearSidebarNotice()
+            viewModel.playSoundPreview(sound)
+        } else {
+            showSidebarNotice("Previews finished for ${sound.name}. Watch an ad to unlock.")
+        }
     }
 
     fun loadRewardedAd() {
@@ -358,7 +372,7 @@ fun MainScreen(
                     selectedSound = selectedSound,
                     volume = volume,
                     onVolumeChange = { viewModel.updateVolume(it) },
-                    onSoundPreview = { sound -> viewModel.playSoundPreview(sound) },
+                    onSoundPreview = ::previewSound,
                     onSoundSelected = { sound ->
                         if (sound.isLocked) soundToUnlock = sound
                         else {
@@ -366,8 +380,8 @@ fun MainScreen(
                             scope.launch { newSoundsDrawerState.close() }
                         }
                     },
-                    noticeMessage = null,
-                    onDismissNotice = {},
+                    noticeMessage = sidebarNotice?.message,
+                    onDismissNotice = ::clearSidebarNotice,
                     onClose = { scope.launch { newSoundsDrawerState.close() } },
                     onPrivacyClick = {},
                     soundPressCounts = soundPressCounts,
@@ -423,25 +437,10 @@ fun MainScreen(
                                 selectedSound = selectedSound,
                                 volume = volume,
                                 onVolumeChange = { viewModel.updateVolume(it) },
-                                onSoundPreview = { sound ->
-                                    if (!sound.isLocked) {
-                                        clearSidebarNotice()
-                                        viewModel.playSoundPreview(sound)
-                                    } else {
-                                        val usedPreviews = lockedPreviewCounts[sound.resId] ?: 0
-                                        if (usedPreviews < 2) {
-                                            lockedPreviewCounts[sound.resId] = usedPreviews + 1
-                                            clearSidebarNotice()
-                                            viewModel.playSoundPreview(sound)
-                                        } else {
-                                            showSidebarNotice("Previews finished for ${sound.name}. Watch an ad to unlock.")
-                                        }
-                                    }
-                                },
+                                onSoundPreview = ::previewSound,
                                 onSoundSelected = { sound ->
                                     if (sound.isLocked) {
-                                        val usedPreviews = lockedPreviewCounts[sound.resId] ?: 0
-                                        if (usedPreviews >= 2) {
+                                        if (lockedPreviewGate.usedPreviews(sound.id) >= LockedSoundPreviewGate.MAX_PREVIEWS) {
                                             showSidebarNotice("Watch an ad to unlock ${sound.name}.")
                                         }
                                         soundToUnlock = sound
@@ -613,7 +612,7 @@ private fun MainContent(
                         horizontalTravel += dragAmount
                         // The home screen has no horizontal content to protect. A deliberate
                         // side swipe can therefore begin away from the physical screen edge.
-                        if (showNewSoundsPrompt && horizontalTravel >= 42.dp.toPx()) {
+                        if (horizontalTravel >= 42.dp.toPx()) {
                             onNewSoundsClick()
                             drawerOpened = true
                         } else if (horizontalTravel <= -42.dp.toPx()) {
@@ -802,17 +801,23 @@ private fun MainContent(
             }
         }
 
-        if (showNewSoundsPrompt) {
-            SwipeEdgeTab(
-                fromLeft = true,
-                onClick = onNewSoundsClick,
-                modifier = Modifier.align(Alignment.BottomStart).padding(bottom = 142.dp)
-            )
-        }
+        SwipeEdgeTab(
+            fromLeft = true,
+            highlighted = showNewSoundsPrompt,
+            onClick = onNewSoundsClick,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .navigationBarsPadding()
+                .padding(bottom = 142.dp)
+        )
         SwipeEdgeTab(
             fromLeft = false,
+            highlighted = false,
             onClick = onMenuClick,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 142.dp)
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(bottom = 142.dp)
         )
 
         // ═══ WALKTHROUGH OVERLAYS ═══
@@ -952,19 +957,17 @@ private fun FahhBottomBar(
         tonalElevation = 0.dp,
         modifier = Modifier.align(Alignment.BottomCenter)
     ) {
-        if (showNewSoundsPrompt) {
-            NavigationBarItem(
-                selected = false,
-                onClick = onNewSoundsClick,
-                icon = { NewSoundsStar() },
-                label = { Text("New sounds", color = Color.White.copy(alpha = 0.72f)) },
-                colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = Color.Transparent,
-                    unselectedIconColor = Color.Unspecified,
-                    unselectedTextColor = Color.White.copy(alpha = 0.72f)
-                )
+        NavigationBarItem(
+            selected = false,
+            onClick = onNewSoundsClick,
+            icon = { NewSoundsStar(highlighted = showNewSoundsPrompt) },
+            label = { Text("New sounds", color = Color.White.copy(alpha = 0.72f)) },
+            colors = NavigationBarItemDefaults.colors(
+                indicatorColor = Color.Transparent,
+                unselectedIconColor = Color.Unspecified,
+                unselectedTextColor = Color.White.copy(alpha = 0.72f)
             )
-        }
+        )
         Spacer(modifier = Modifier.weight(1f))
         NavigationBarItem(
             selected = false,
@@ -1008,31 +1011,32 @@ private fun FahhBottomBar(
 }
 
 @Composable
-private fun NewSoundsStar() {
+private fun NewSoundsStar(highlighted: Boolean) {
     val transition = rememberInfiniteTransition(label = "newSoundsStar")
     val glow by transition.animateFloat(
-        initialValue = 0.72f,
-        targetValue = 0.9f,
+        initialValue = if (highlighted) 0.72f else 1f,
+        targetValue = if (highlighted) 0.9f else 1f,
         animationSpec = infiniteRepeatable(tween(2_400), RepeatMode.Reverse),
         label = "newSoundsStarGlow"
     )
     Icon(
         Icons.Default.AutoAwesome,
         contentDescription = "New sounds",
-        tint = Color(0xFFFFC56D).copy(alpha = glow)
+        tint = if (highlighted) Color(0xFFFFC56D).copy(alpha = glow) else Color.White.copy(alpha = 0.62f)
     )
 }
 
 @Composable
 private fun SwipeEdgeTab(
     fromLeft: Boolean,
+    highlighted: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val transition = rememberInfiniteTransition(label = "edgeTab")
     val nudge by transition.animateFloat(
         initialValue = 0f,
-            targetValue = if (fromLeft) 2f else -2f,
+        targetValue = if (highlighted) if (fromLeft) 2f else -2f else 0f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1200),
             repeatMode = RepeatMode.Reverse
@@ -1044,20 +1048,29 @@ private fun SwipeEdgeTab(
         onClick = onClick,
         shape = if (fromLeft) RoundedCornerShape(topEnd = 10.dp, bottomEnd = 10.dp)
         else RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp),
-        color = Primary.copy(alpha = 0.18f),
+        color = if (highlighted) Color(0xFFFFC56D).copy(alpha = 0.2f) else Color.White.copy(alpha = 0.08f),
         modifier = modifier
             .offset(x = nudge.dp)
-            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+            .width(64.dp)
+            .height(48.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 7.dp)
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp)
         ) {
             Icon(
-                imageVector = if (fromLeft) Icons.Default.ChevronRight else Icons.Default.ChevronLeft,
+                imageVector = if (fromLeft) Icons.Default.AutoAwesome else Icons.Default.Menu,
                 contentDescription = if (fromLeft) "Open new sounds" else "Open sounds",
-                tint = Color.White.copy(alpha = 0.58f),
-                modifier = Modifier.size(12.dp)
+                tint = if (highlighted) Color(0xFFFFC56D) else Color.White.copy(alpha = 0.62f),
+                modifier = Modifier.size(14.dp)
+            )
+            Spacer(Modifier.width(3.dp))
+            Text(
+                text = if (fromLeft) "New" else "Sounds",
+                color = if (highlighted) Color(0xFFFFC56D) else Color.White.copy(alpha = 0.62f),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold
             )
         }
     }

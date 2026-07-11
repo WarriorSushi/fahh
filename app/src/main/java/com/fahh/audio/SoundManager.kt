@@ -123,17 +123,6 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
         val file = File(filePath)
         if (!file.exists() || endMs <= startMs) return
         releaseCustomPlayer()
-        val selectionDurationMs = (endMs - startMs).coerceAtLeast(120L)
-        val startSelection: (MediaPlayer) -> Unit = { player ->
-            if (customPlayer === player) {
-                player.start()
-                val stop = Runnable {
-                    if (customPlayer === player) releaseCustomPlayer()
-                }
-                customStopAction = stop
-                mainHandler.postDelayed(stop, selectionDurationMs)
-            }
-        }
         customPlayer = MediaPlayer().apply {
             setAudioAttributes(
                 AudioAttributes.Builder()
@@ -144,14 +133,43 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
             setDataSource(file.absolutePath)
             setVolume(volume, volume)
             setOnPreparedListener { player ->
-                if (startMs <= 0L) startSelection(player)
-                else player.seekTo(startMs.toInt())
+                val durationMs = player.duration.toLong().coerceAtLeast(1L)
+                val selectionStartMs = startMs.coerceIn(0L, durationMs - 1L)
+                val selectionEndMs = endMs.coerceIn(selectionStartMs + 1L, durationMs)
+                player.setOnSeekCompleteListener { seekedPlayer ->
+                    if (customPlayer === seekedPlayer) {
+                        seekedPlayer.start()
+                        stopCustomSelectionAt(seekedPlayer, selectionEndMs)
+                    }
+                }
+                // Seek even when the selection begins at zero. That guarantees playback
+                // cannot start until the selected range has been established.
+                player.seekTo(selectionStartMs.toInt())
             }
-            setOnSeekCompleteListener(startSelection)
             setOnCompletionListener { releaseCustomPlayer() }
             setOnErrorListener { _, _, _ -> releaseCustomPlayer(); true }
             prepareAsync()
         }
+    }
+
+    /** Poll the real playback position so a delayed seek cannot turn a trim preview into a full clip. */
+    private fun stopCustomSelectionAt(player: MediaPlayer, endMs: Long) {
+        val stop = object : Runnable {
+            override fun run() {
+                if (customPlayer !== player) return
+                val currentPosition = runCatching { player.currentPosition.toLong() }.getOrElse {
+                    releaseCustomPlayer()
+                    return
+                }
+                if (currentPosition >= endMs) {
+                    releaseCustomPlayer()
+                } else {
+                    mainHandler.postDelayed(this, 25L)
+                }
+            }
+        }
+        customStopAction = stop
+        mainHandler.post(stop)
     }
 
     private fun releaseCustomPlayer() {

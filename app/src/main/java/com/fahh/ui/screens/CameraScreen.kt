@@ -212,6 +212,7 @@ fun CameraScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .statusBarsPadding()
                         .padding(top = 16.dp, start = 16.dp, end = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -419,7 +420,12 @@ fun CameraScreen(
             PermissionRequiredContent(onGrantClick = { permissionLauncher.launch(cameraPermissions) })
         }
 
-        SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+        )
     }
     } // CompositionLocalProvider Ltr
     } // ModalNavigationDrawer

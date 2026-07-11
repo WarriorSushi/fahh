@@ -193,26 +193,29 @@ private fun SoundTile(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                // Keep the unlock label clear of the dedicated 48 dp preview target.
+                Spacer(modifier = Modifier.height(9.dp))
 
                 // Status badge
-                Surface(
-                    shape = RoundedCornerShape(5.dp),
-                    color = when {
-                        sound.isLocked -> Color(0xFFFF6B00).copy(alpha = 0.15f)
-                        isSelected -> Primary.copy(alpha = 0.2f)
-                        else -> Primary.copy(alpha = 0.1f)
+                Box(modifier = Modifier.fillMaxWidth().padding(end = 52.dp)) {
+                    Surface(
+                        shape = RoundedCornerShape(5.dp),
+                        color = when {
+                            sound.isLocked -> Color(0xFFFF6B00).copy(alpha = 0.15f)
+                            isSelected -> Primary.copy(alpha = 0.2f)
+                            else -> Primary.copy(alpha = 0.1f)
+                        }
+                    ) {
+                        Text(
+                            text = if (sound.isLocked) "1 AD TO UNLOCK" else if (isSelected) "ACTIVE" else "READY",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (sound.isLocked) Color(0xFFFF9D42) else Primary,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.5.sp,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                        )
                     }
-                ) {
-                    Text(
-                        text = if (sound.isLocked) "WATCH 1 AD TO UNLOCK" else if (isSelected) "ACTIVE" else "READY",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (sound.isLocked) Color(0xFFFF9D42) else Primary,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 0.5.sp,
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
-                    )
                 }
 
                 Spacer(modifier = Modifier.weight(1f))

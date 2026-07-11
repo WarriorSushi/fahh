@@ -88,7 +88,7 @@ fun SidebarMenu(
                 shape = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp)
             )
     ) {
-        Column {
+        Column(modifier = Modifier.navigationBarsPadding()) {
             // Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,

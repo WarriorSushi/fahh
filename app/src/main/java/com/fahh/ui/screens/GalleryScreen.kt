@@ -81,6 +81,7 @@ fun GalleryScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .navigationBarsPadding()
                 .padding(horizontal = 12.dp)
         ) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -285,6 +286,7 @@ private fun VideoPreviewOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .navigationBarsPadding()
             .background(Color.Black.copy(alpha = 0.85f))
             .clickable(onClick = onDismiss),
         contentAlignment = Alignment.Center
