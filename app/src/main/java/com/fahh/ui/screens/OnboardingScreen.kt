@@ -3,17 +3,23 @@ package com.fahh.ui.screens
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -92,7 +98,7 @@ fun OnboardingScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
+            TactileOnboardingButton(
                 onClick = {
                     if (isLastPage) {
                         onFinish()
@@ -102,20 +108,46 @@ fun OnboardingScreen(
                         }
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isLastPage) Color(0xFFEF4444) else Color.White.copy(alpha = 0.08f),
-                    contentColor = Color.White
+                text = if (isLastPage) "LET'S GO" else "Next",
+                isPrimary = isLastPage
+            )
+        }
+    }
+}
+
+@Composable
+private fun TactileOnboardingButton(onClick: () -> Unit, text: String, isPrimary: Boolean) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val pressDepth by animateDpAsState(
+        targetValue = if (pressed) 9.dp else 0.dp,
+        animationSpec = tween(durationMillis = if (pressed) 55 else 130),
+        label = "onboardingPressDepth"
+    )
+    val faceColor = if (isPrimary) Color(0xFFF05252) else Color(0xFF313B4A)
+    val baseColor = if (isPrimary) Color(0xFF8E252B) else Color(0xFF141C27)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(65.dp)
+            .background(baseColor, RoundedCornerShape(16.dp))
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .offset(y = pressDepth)
+                .background(faceColor, RoundedCornerShape(16.dp))
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    role = Role.Button,
+                    onClick = onClick
                 )
-            ) {
-                Text(
-                    text = if (isLastPage) "LET'S GO" else "Next",
-                    fontWeight = FontWeight.Black
-                )
-            }
+        ) {
+            Text(text = text, color = Color.White, fontWeight = FontWeight.Black)
         }
     }
 }
