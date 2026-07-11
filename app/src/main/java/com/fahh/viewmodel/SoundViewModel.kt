@@ -10,6 +10,7 @@ import com.fahh.data.model.Sound
 import com.fahh.data.repository.SettingsRepository
 import com.fahh.data.repository.SoundRepository
 import com.fahh.data.repository.CustomSoundRepository
+import com.fahh.utils.AudioTrimUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.File
+import java.util.UUID
 
 @HiltViewModel
 class SoundViewModel @Inject constructor(
@@ -231,6 +234,18 @@ class SoundViewModel @Inject constructor(
         if (_selectedSound.value.id == soundId) {
             selectSound(SoundCatalog.defaultSelectedSound)
         }
+    }
+
+    /** Keeps the selected local portion of a custom recording and updates its displayed name. */
+    fun editCustomSound(soundId: String, name: String, startMs: Long, endMs: Long): Result<Sound> = runCatching {
+        val sound = customSoundRepository.sounds.value.firstOrNull { it.id == soundId }
+            ?: error("Custom sound no longer exists.")
+        val source = File(checkNotNull(sound.filePath))
+        val replacement = File(source.parentFile, "trim_${UUID.randomUUID()}.m4a")
+        AudioTrimUtils.trimAudio(source, replacement, startMs, endMs)
+        val updated = customSoundRepository.update(soundId, name, replacement)
+        if (_selectedSound.value.id == soundId) _selectedSound.value = updated
+        updated
     }
 
     fun unlockPack(packName: String) {

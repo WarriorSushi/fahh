@@ -39,6 +39,21 @@ class CustomSoundRepository @Inject constructor(@ApplicationContext private val 
         persist()
     }
 
+    fun update(soundId: String, name: String, replacementFile: File? = null): Sound {
+        val existing = _sounds.value.firstOrNull { it.id == soundId }
+            ?: error("Custom sound no longer exists.")
+        val updated = existing.copy(
+            name = name.trim().ifBlank { existing.name },
+            filePath = replacementFile?.absolutePath ?: existing.filePath
+        )
+        _sounds.value = _sounds.value.map { if (it.id == soundId) updated else it }
+        if (replacementFile != null && existing.filePath != replacementFile.absolutePath) {
+            existing.filePath?.let { File(it).delete() }
+        }
+        persist()
+        return updated
+    }
+
     private fun load(): List<Sound> = runCatching {
         val entries = JSONArray(preferences.getString("items", "[]"))
         buildList {

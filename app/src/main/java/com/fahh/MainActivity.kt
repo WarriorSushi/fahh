@@ -296,7 +296,11 @@ class MainActivity : ComponentActivity() {
                     ) {
                         val context = LocalContext.current
                         GalleryScreen(
-                            onBack = { navController.popBackStack() },
+                            // Gallery is only entered from Home. Returning explicitly avoids a
+                            // transient empty NavHost after a fast back press during its exit animation.
+                            onBack = {
+                                navController.popBackStack(Screen.Main.route, inclusive = false)
+                            },
                             onShare = { file ->
                                 ShareUtils.shareVideo(context, file)
                             },
