@@ -27,6 +27,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -96,6 +97,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import com.fahh.R
 import com.fahh.BuildConfig
@@ -145,6 +147,7 @@ fun MainScreen(
     val sounds by viewModel.allSounds.collectAsState()
     val newSoundIds = remember { SoundCatalog.sounds.drop(12).map { it.id }.toSet() }
     val newSounds = sounds.filter { it.id in newSoundIds }
+    val rightDrawerSounds = sounds.filter { it.id !in newSoundIds && it.filePath == null }
     val selectedSound by viewModel.selectedSound.collectAsState()
     val volume by viewModel.volume.collectAsState()
     val streak by viewModel.streak.collectAsState()
@@ -389,7 +392,7 @@ fun MainScreen(
                             )
                         } else {
                             SidebarMenu(
-                                sounds = sounds,
+                                sounds = rightDrawerSounds,
                                 selectedSound = selectedSound,
                                 volume = volume,
                                 onVolumeChange = { viewModel.updateVolume(it) },
@@ -434,6 +437,8 @@ fun MainScreen(
                                 },
                                 onSettingsClick = { showSettings = true },
                                 onTipJarClick = { showTipJarDialog = true },
+                                title = "Unlocked sounds",
+                                subtitle = "Your collection and original reactions",
                                 onOpenMoreSounds = {
                                     scope.launch {
                                         drawerState.close()
@@ -563,6 +568,27 @@ private fun MainContent(
         modifier = Modifier
             .fillMaxSize()
             .background(Background)
+            .pointerInput(Unit) {
+                var startedAtLeftEdge = false
+                var accumulatedDrag = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { offset ->
+                        startedAtLeftEdge = offset.x <= 48.dp.toPx()
+                        accumulatedDrag = 0f
+                    },
+                    onHorizontalDrag = { _, dragAmount ->
+                        if (startedAtLeftEdge) {
+                            accumulatedDrag += dragAmount
+                            if (accumulatedDrag > 42f) {
+                                onNewSoundsClick()
+                                startedAtLeftEdge = false
+                            }
+                        }
+                    },
+                    onDragEnd = { startedAtLeftEdge = false },
+                    onDragCancel = { startedAtLeftEdge = false }
+                )
+            }
     ) {
         // Ambient background glow
         Box(
@@ -722,16 +748,14 @@ private fun MainContent(
         }
 
         SwipeEdgeTab(
-            label = "New",
             fromLeft = true,
             onClick = onNewSoundsClick,
-            modifier = Modifier.align(Alignment.CenterStart).padding(bottom = 88.dp)
+            modifier = Modifier.align(Alignment.BottomStart).padding(bottom = 142.dp)
         )
         SwipeEdgeTab(
-            label = "Sounds",
             fromLeft = false,
             onClick = onMenuClick,
-            modifier = Modifier.align(Alignment.CenterEnd).padding(bottom = 88.dp)
+            modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 142.dp)
         )
 
         // ═══ WALKTHROUGH OVERLAYS ═══
@@ -950,7 +974,6 @@ private fun FlyingComboText(
 
 @Composable
 private fun SwipeEdgeTab(
-    label: String,
     fromLeft: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -980,11 +1003,10 @@ private fun SwipeEdgeTab(
         ) {
             Icon(
                 imageVector = if (fromLeft) Icons.Default.ChevronRight else Icons.Default.ChevronLeft,
-                contentDescription = "Open $label",
+                contentDescription = if (fromLeft) "Open new sounds" else "Open sounds",
                 tint = Color.White.copy(alpha = 0.9f),
                 modifier = Modifier.size(15.dp)
             )
-            Text(label, color = Color.White.copy(alpha = 0.78f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

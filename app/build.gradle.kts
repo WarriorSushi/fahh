@@ -133,6 +133,11 @@ dependencies {
     // In-App Review
     implementation("com.google.android.play:review-ktx:2.0.1")
 
+    // Video export with a baked-in Fahh watermark.
+    val media3Version = "1.5.0"
+    implementation("androidx.media3:media3-transformer:$media3Version")
+    implementation("androidx.media3:media3-effect:$media3Version")
+
 
 
     // Material Components for XML Themes

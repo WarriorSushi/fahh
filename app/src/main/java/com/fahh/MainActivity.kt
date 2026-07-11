@@ -19,6 +19,7 @@ import com.fahh.ui.components.RateUsDialog
 import com.fahh.ui.screens.*
 import com.fahh.ui.theme.FahhTheme
 import com.fahh.utils.ConsentManager
+import com.fahh.utils.FahhWatermarkExporter
 import com.fahh.utils.ShareUtils
 import com.fahh.viewmodel.SoundViewModel
 import com.google.android.play.core.review.ReviewManagerFactory
@@ -181,9 +182,30 @@ class MainActivity : ComponentActivity() {
                             onBack = { navController.popBackStack() },
                             onCustomSoundsClick = { navController.navigate(Screen.MySounds.route) },
                             onVideoSaved = { file ->
-                                lastVideoFile = file
-                                soundViewModel.onRecordingFinished()
-                                navController.navigate(Screen.Share.route)
+                                val watermarkedFile = File(
+                                    file.parentFile,
+                                    "fahh_${file.nameWithoutExtension}.mp4"
+                                )
+                                FahhWatermarkExporter(this@MainActivity).export(
+                                    inputFile = file,
+                                    outputFile = watermarkedFile,
+                                    onSuccess = { exported ->
+                                        runOnUiThread {
+                                            runCatching { file.delete() }
+                                            lastVideoFile = exported
+                                            soundViewModel.onRecordingFinished()
+                                            navController.navigate(Screen.Share.route)
+                                        }
+                                    },
+                                    onError = {
+                                        // Never strand a user's recording if the device exporter fails.
+                                        runOnUiThread {
+                                            lastVideoFile = file
+                                            soundViewModel.onRecordingFinished()
+                                            navController.navigate(Screen.Share.route)
+                                        }
+                                    }
+                                )
                             },
                             soundViewModel = soundViewModel
                         )
