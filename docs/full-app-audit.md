@@ -8,15 +8,15 @@
 
 Fahh's core identity is strong: the main button is immediate, physical, and memorable; the app has no accounts or cloud dependency; earned bundled-sound unlocks have a real Room migration; custom recordings stay in private app storage; and the normal unit-test task passes. The current source is not ready for the next Play release, however. The largest technical risks are the forced watermark export and its lifecycle-sensitive handoff, an on-demand `SoundPool` listener race that can play the wrong sound, active-recording back navigation, transient video navigation state, and custom recording that is not stopped when the app backgrounds. The largest release risks are insufficient rights evidence for recognizable clips, stale public privacy disclosures, missing UMP privacy-options UI, and materially inaccurate store copy.
 
-No P0 was assigned because the audit did not prove a defect that consistently prevents every user from completing the core task. Twelve P1 findings should be resolved or explicitly accepted before release.
+No P0 was assigned because the audit did not prove a defect that consistently prevents every user from completing the core task. Thirteen P1 findings should be resolved or explicitly accepted before release.
 
 | Severity | Count |
 |---|---:|
 | P0 | 0 |
-| P1 | 12 |
+| P1 | 13 |
 | P2 | 9 |
 | P3 | 2 |
-| **Total** | **23** |
+| **Total** | **24** |
 
 ## Audit health score
 
@@ -82,7 +82,16 @@ Fahh does not look generically AI-generated. The hero control, playful copy, and
 - **Recommended fix:** Install one listener during initialization and keep pending play requests keyed by returned sample ID. Coalesce duplicate loads, clear pending requests on failure, and test out-of-order completion.
 - **Before next Play release:** **Yes.**
 
-#### P1-06: Recognizable bundled clips lack release-grade rights evidence
+#### P1-06: Long bundled clips use a short-effect playback engine
+
+- **Location:** `app/src/main/java/com/fahh/audio/SoundManager.kt:17-80`; `app/src/main/java/com/fahh/data/catalog/SoundCatalog.kt:35-45`; duration inventory in `docs/2026-07-premium-update-plan.md:311-330`
+- **Category:** Audio / Reliability
+- **Reproduction:** Unlock and cold-play John Cena (about 7.5 seconds), Sad Violin (about 22.5 seconds), Prowler (about 13.7 seconds), Spooderman (about 7.7 seconds), or Ultra Suspense (about 9.2 seconds) on a low-memory device. All bundled resources are loaded through `SoundPool`, which is designed for short, decoded-in-memory effects.
+- **User impact:** Long clips can fail to load, silently drop the first press, consume excessive decoded memory, or behave inconsistently under rapid switching. A user may watch a rewarded ad for a sound that does not reliably play.
+- **Recommended fix:** Record duration in catalog metadata, retain `SoundPool` for short latency-sensitive effects, and route long clips through one lifecycle-aware `MediaPlayer`/Media3 instance with explicit stop/restart behavior. Device-test every rewarded clip before release.
+- **Before next Play release:** **Yes.**
+
+#### P1-07: Recognizable bundled clips lack release-grade rights evidence
 
 - **Location:** `docs/sound-rights-ledger.csv:2-25`; `app/src/main/java/com/fahh/data/catalog/SoundCatalog.kt:32-48`
 - **Category:** Play policy / Intellectual property
@@ -91,7 +100,7 @@ Fahh does not look generically AI-generated. The hero control, playful copy, and
 - **Recommended fix:** Before shipping each clip, attach written permission or a verifiable commercial license with source, rightsholder, scope, and attribution. Remove any clip that cannot be documented. Do not restore the four intentionally removed staged files.
 - **Before next Play release:** **Yes, release blocker.** See [Google Play Intellectual Property policy](https://support.google.com/googleplay/android-developer/answer/9888072).
 
-#### P1-07: Public privacy disclosures are stale and internally contradictory
+#### P1-08: Public privacy disclosures are stale and internally contradictory
 
 - **Location:** `app/src/main/java/com/fahh/ui/screens/PrivacyPolicyScreen.kt:62-90`; `STORE_LISTING.md:75-93`; public page `https://tracker.dog/fahh-privay-policy/`
 - **Category:** Privacy / Play policy
@@ -100,7 +109,7 @@ Fahh does not look generically AI-generated. The hero control, playful copy, and
 - **Recommended fix:** Update the public page and store declaration together. Identify the developer and privacy contact, describe AdMob collection/sharing and purposes, local custom audio/video retention and deletion, permission use, and current SDKs.
 - **Before next Play release:** **Yes.** See [Google Play User Data policy](https://support.google.com/googleplay/android-developer/answer/10144311) and [Data Safety guidance](https://support.google.com/googleplay/android-developer/answer/10787469).
 
-#### P1-08: UMP privacy options cannot be reopened when required
+#### P1-09: UMP privacy options cannot be reopened when required
 
 - **Location:** `app/src/main/java/com/fahh/utils/ConsentManager.kt:19-57`; `app/src/main/java/com/fahh/ui/components/SettingsSheet.kt:58-354`
 - **Category:** Consent / Ads
@@ -109,7 +118,7 @@ Fahh does not look generically AI-generated. The hero control, playful copy, and
 - **Recommended fix:** Expose observable privacy-options requirement state, show a visible “Ad privacy choices” row only when required, and call `UserMessagingPlatform.showPrivacyOptionsForm()` from the current Activity.
 - **Before next Play release:** **Yes.** See the current [UMP Android setup](https://developers.google.com/admob/android/privacy).
 
-#### P1-09: Core accessibility targets and contrast do not meet the product standard
+#### P1-10: Core accessibility targets and contrast do not meet the product standard
 
 - **Location:** `app/src/main/java/com/fahh/ui/theme/Color.kt:6,10`; `app/src/main/java/com/fahh/ui/components/SoundGrid.kt:147-164,195-212`; `app/src/main/java/com/fahh/ui/components/SidebarMenu.kt:170-179`; `app/src/main/java/com/fahh/ui/screens/MainScreen.kt:1026-1060`
 - **Category:** Accessibility
@@ -118,7 +127,7 @@ Fahh does not look generically AI-generated. The hero control, playful copy, and
 - **Recommended fix:** Use a primary/on-primary pairing that meets contrast, make all interactive bounds at least 48 dp, raise status text to a readable Material label size, and announce selected/locked state in semantics.
 - **Before next Play release:** **Yes.**
 
-#### P1-10: Image-only onboarding is inaccessible to TalkBack
+#### P1-11: Image-only onboarding is inaccessible to TalkBack
 
 - **Location:** `app/src/main/java/com/fahh/ui/screens/OnboardingScreen.kt:31-71`; `app/src/main/java/com/fahh/ui/screens/UpdateOnboardingScreen.kt:24-45`
 - **Category:** Accessibility / Onboarding
@@ -127,7 +136,7 @@ Fahh does not look generically AI-generated. The hero control, playful copy, and
 - **Recommended fix:** Prefer real Compose text over text baked into images. As an immediate fix, provide page-specific descriptions and announce page position; preserve images as decorative support.
 - **Before next Play release:** **Yes.**
 
-#### P1-11: Narrow phones and large fonts can clip drawers and primary flows
+#### P1-12: Narrow phones and large fonts can clip drawers and primary flows
 
 - **Location:** `app/src/main/java/com/fahh/ui/components/SidebarMenu.kt:76-88`; `app/src/main/java/com/fahh/ui/components/SettingsSheet.kt:75-88`; `app/src/main/java/com/fahh/ui/screens/ShareScreen.kt:61-271`; `app/src/main/java/com/fahh/ui/screens/TrimScreen.kt:57-245`
 - **Category:** Responsive design
@@ -136,7 +145,7 @@ Fahh does not look generically AI-generated. The hero control, playful copy, and
 - **Recommended fix:** Constrain drawers to the available width, use adaptive grid/list columns, add vertical scrolling or constraint-aware preview sizing, and test 320 dp plus 200% font.
 - **Before next Play release:** **Yes.**
 
-#### P1-12: Custom recording can continue unexpectedly through backgrounding and has a rotation-dependent timer
+#### P1-13: Custom recording can continue unexpectedly through backgrounding and has a rotation-dependent timer
 
 - **Location:** `app/src/main/java/com/fahh/audio/CustomSoundRecorder.kt:12-57`; `app/src/main/java/com/fahh/ui/screens/MySoundsScreen.kt:105-116,140-144`
 - **Category:** Audio recording / Lifecycle / Privacy
@@ -270,17 +279,17 @@ The findings above intentionally describe the audited baseline at `f92d2a4`. The
 - **P1-03 fixed:** system and top-bar Back now provide feedback instead of leaving during recording or saving.
 - **P1-04 fixed for configuration/process recreation:** current video path uses saveable state and is validated by existing Share/Trim guards.
 - **P1-05 fixed:** a single `SoundPool` listener now queues pending taps by sample ID and handles out-of-order loads deterministically.
-- **P1-08 fixed in code:** More cool exposes UMP privacy options when the SDK says the entry point is required.
-- **P1-09 substantially improved:** action red now supports white text at 4.62:1, preview/dismiss/edge targets are at least 48 dp, and tiny sound status labels were raised to 10 sp.
-- **P1-10 fixed for current image onboarding:** every page now has a page-specific TalkBack description. Converting baked-in image text to native text remains preferred.
-- **P1-11 substantially improved:** drawers constrain to available width, large-font sound grids become one column, and Share/Trim can scroll.
-- **P1-12 substantially improved:** the recorder enforces a five-second maximum and active custom recording is cancelled when the screen lifecycle stops.
+- **P1-09 fixed in code:** More cool exposes UMP privacy options when the SDK says the entry point is required.
+- **P1-10 substantially improved:** action red now supports white text at 4.62:1, preview/dismiss/edge targets are at least 48 dp, and tiny sound status labels were raised to 10 sp.
+- **P1-11 fixed for current image onboarding:** every page now has a page-specific TalkBack description. Converting baked-in image text to native text remains preferred.
+- **P1-12 substantially improved:** drawers constrain to available width, large-font sound grids become one column, and Share/Trim can scroll.
+- **P1-13 substantially improved:** the recorder enforces a five-second maximum and active custom recording is cancelled when the screen lifecycle stops.
 - **P2-03 improved:** consent-pending/ad-loading states now produce user-visible retry guidance.
 - **P2-05 partially fixed:** malformed persisted activity dates no longer crash parsing.
 - **P2-06 fixed in repository copy:** sound count, camera-switch wording, size claim, README ad model, and in-app version label now match source.
 - **P3-02 fixed:** gallery and custom-audio metadata retrievers now release on exception paths.
 
-Still release-blocking after code remediation: P1-06 rights evidence, P1-07 public privacy/Data Safety synchronization, real-device camera/media verification, and the signed minified internal release check.
+Still release-blocking after code remediation: P1-06 long-clip playback, P1-07 rights evidence, P1-08 public privacy/Data Safety synchronization, real-device camera/media verification, and the signed minified internal release check.
 
 ## Positive findings to preserve
 
