@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -165,6 +166,14 @@ private fun SoundTile(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(end = 36.dp)
                 ) {
+                    if (sound.filePath != null) {
+                        Icon(
+                            imageVector = Icons.Default.Mic,
+                            contentDescription = "Custom sound",
+                            tint = Primary,
+                            modifier = Modifier.size(15.dp).padding(end = 4.dp)
+                        )
+                    }
                     Text(
                         text = sound.name,
                         style = MaterialTheme.typography.bodyMedium,
@@ -173,7 +182,7 @@ private fun SoundTile(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         fontSize = 13.sp,
-                        modifier = if (!sound.isLocked) Modifier.padding(start = 22.dp) else Modifier
+                        modifier = Modifier
                     )
                 }
 

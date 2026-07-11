@@ -134,15 +134,15 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(24.dp)) {
-            Text("Your private reaction vault", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black)
-            Text("Record short reactions. They stay on this device.", color = Color.White.copy(alpha = 0.62f), fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
+            Text("Make your own sounds", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black)
+            Text("Record a sound, name it, then use it with the Fahh button. Sounds stay on this device.", color = Color.White.copy(alpha = 0.62f), fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
             Spacer(Modifier.height(16.dp))
 
             Surface(color = SurfaceHigh, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(14.dp)) {
-                    Text("${customSounds.size} saved · $customSoundSlots slots unlocked", color = Primary, fontWeight = FontWeight.Bold)
+                    Text("${customSounds.size} saved sounds · $customSoundSlots slots unlocked forever", color = Primary, fontWeight = FontWeight.Bold)
                     Text(
-                        text = if (customSounds.size < customSoundSlots) "You have a recording slot ready." else "Watch one optional ad to add your next recording slot.",
+                        text = if (customSounds.size < customSoundSlots) "You have a sound slot ready to use." else "Watch one optional ad to unlock another sound slot forever.",
                         color = Color.White.copy(alpha = 0.6f),
                         fontSize = 12.sp,
                         modifier = Modifier.padding(top = 3.dp)
@@ -154,8 +154,8 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it.take(24) },
-                label = { Text("Name this reaction") },
-                supportingText = { Text("You can rename it before saving") },
+                label = { Text("Name this sound") },
+                supportingText = { Text("This name appears on the Fahh button") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -192,10 +192,10 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
                 ) { Text("Discard recording") }
             }
             Spacer(Modifier.height(18.dp))
-            Text("YOUR REACTIONS", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+            Text("YOUR SOUNDS", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
             Spacer(Modifier.height(8.dp))
             if (customSounds.isEmpty()) {
-                Text("Your saved reactions will appear here. Record one, then select it for the main button or camera.", color = Color.White.copy(alpha = 0.52f), fontSize = 14.sp, modifier = Modifier.padding(vertical = 16.dp))
+                Text("Your saved sounds appear here. Record one, then tap Use on button.", color = Color.White.copy(alpha = 0.52f), fontSize = 14.sp, modifier = Modifier.padding(vertical = 16.dp))
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(customSounds, key = { it.id }) { sound ->
@@ -227,14 +227,24 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
 
 @Composable
 private fun CustomSoundRow(sound: Sound, isSelected: Boolean, isNewlySaved: Boolean, onPreview: () -> Unit, onSelect: () -> Unit, onDelete: () -> Unit) {
-    Surface(onClick = onSelect, color = if (isSelected) Primary.copy(alpha = 0.18f) else SurfaceHigh, shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("✦", color = Primary, fontSize = 20.sp); Spacer(Modifier.width(10.dp)); Column(modifier = Modifier.weight(1f)) {
-                Text(sound.name, color = Color.White, fontWeight = FontWeight.Bold)
-                if (isSelected || isNewlySaved) Text(if (isSelected) "Selected for Fahh" else "Saved and ready", color = Primary, fontSize = 11.sp)
+    Surface(color = if (isSelected) Primary.copy(alpha = 0.18f) else SurfaceHigh, shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("✦", color = Primary, fontSize = 20.sp)
+                Spacer(Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(sound.name, color = Color.White, fontWeight = FontWeight.Bold)
+                    if (isSelected || isNewlySaved) Text(if (isSelected) "Using on button" else "Saved and ready", color = Primary, fontSize = 11.sp)
+                }
+                IconButton(onClick = onPreview) { Icon(Icons.Default.PlayArrow, "Preview ${sound.name}", tint = Color.White) }
+                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, "Delete ${sound.name}", tint = Color.White.copy(alpha = 0.7f)) }
             }
-            IconButton(onClick = onPreview) { Icon(Icons.Default.PlayArrow, "Preview ${sound.name}", tint = Color.White) }
-            IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, "Delete ${sound.name}", tint = Color.White.copy(alpha = 0.7f)) }
+            Button(
+                onClick = onSelect,
+                enabled = !isSelected,
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = if (isSelected) Color.White.copy(alpha = 0.12f) else Primary)
+            ) { Text(if (isSelected) "Using on button" else "Use on button") }
         }
     }
 }

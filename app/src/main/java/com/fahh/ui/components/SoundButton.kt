@@ -122,7 +122,10 @@ fun SoundButton(
     ) {
         // Particle Burst Layer
         Box(
-            modifier = Modifier.size(buttonSize).align(Alignment.TopCenter),
+            modifier = Modifier
+                .size(buttonSize)
+                .align(Alignment.TopCenter)
+                .offset(y = sinkDistance),
             contentAlignment = Alignment.Center
         ) {
             ParticleBurst(
@@ -300,7 +303,8 @@ fun SoundButton(
             modifier = Modifier
                 .size(buttonSize * 1.6f)
                 .align(Alignment.TopCenter)
-                .offset(y = -(buttonSize * 0.3f))
+                // Keep the visual burst centered on the moving button face.
+                .offset(y = -(buttonSize * 0.3f) + sinkDistance)
         ) {
             val cx = size.width / 2
             val cy = size.height / 2

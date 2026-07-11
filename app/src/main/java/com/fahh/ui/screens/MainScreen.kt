@@ -147,7 +147,7 @@ fun MainScreen(
     val sounds by viewModel.allSounds.collectAsState()
     val newSoundIds = remember { SoundCatalog.sounds.drop(12).map { it.id }.toSet() }
     val newSounds = sounds.filter { it.id in newSoundIds }
-    val rightDrawerSounds = sounds.filter { it.id !in newSoundIds && it.filePath == null }
+    val rightDrawerSounds = sounds.filter { it.id !in newSoundIds }
     val selectedSound by viewModel.selectedSound.collectAsState()
     val volume by viewModel.volume.collectAsState()
     val streak by viewModel.streak.collectAsState()
@@ -572,27 +572,19 @@ private fun MainContent(
             .pointerInput(Unit) {
                 var startedAtLeftEdge = false
                 var startedAtRightEdge = false
-                var accumulatedDrag = 0f
                 detectHorizontalDragGestures(
                     onDragStart = { offset ->
                         startedAtLeftEdge = offset.x <= 48.dp.toPx()
                         startedAtRightEdge = offset.x >= size.width - 48.dp.toPx()
-                        accumulatedDrag = 0f
                     },
                     onHorizontalDrag = { _, dragAmount ->
-                        if (startedAtLeftEdge) {
-                            accumulatedDrag += dragAmount
-                            if (accumulatedDrag > 42f) {
-                                onNewSoundsClick()
-                                startedAtLeftEdge = false
-                            }
+                        if (startedAtLeftEdge && dragAmount > 0f) {
+                            onNewSoundsClick()
+                            startedAtLeftEdge = false
                         }
-                        if (startedAtRightEdge) {
-                            accumulatedDrag += dragAmount
-                            if (accumulatedDrag < -42f) {
-                                onMenuClick()
-                                startedAtRightEdge = false
-                            }
+                        if (startedAtRightEdge && dragAmount < 0f) {
+                            onMenuClick()
+                            startedAtRightEdge = false
                         }
                     },
                     onDragEnd = {
