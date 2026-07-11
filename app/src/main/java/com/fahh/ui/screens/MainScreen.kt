@@ -351,7 +351,7 @@ fun MainScreen(
                     onClose = { scope.launch { newSoundsDrawerState.close() } },
                     onPrivacyClick = {},
                     title = "New sounds",
-                    subtitle = "Fresh reactions, ready to unlock",
+                    subtitle = "Watch 1 ad to unlock a sound forever",
                     showMoreSoundsAction = false,
                     showUtilityDock = false
                 )
