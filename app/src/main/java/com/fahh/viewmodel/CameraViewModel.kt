@@ -51,6 +51,9 @@ class CameraViewModel @Inject constructor(
     private val _recordingTimer = MutableStateFlow("00:00")
     val recordingTimer = _recordingTimer.asStateFlow()
 
+    private val _savedVideo = MutableStateFlow<File?>(null)
+    val savedVideo = _savedVideo.asStateFlow()
+
     private var currentRecording: androidx.camera.video.Recording? = null
     private var timerJob: Job? = null
 
@@ -74,6 +77,7 @@ class CameraViewModel @Inject constructor(
     }
 
     fun toggleCamera() {
+        if (_isRecording.value || _isSavingRecording.value) return
         _cameraSelector.value = if (_cameraSelector.value == CameraSelector.DEFAULT_BACK_CAMERA) {
             CameraSelector.DEFAULT_FRONT_CAMERA
         } else {
@@ -83,7 +87,6 @@ class CameraViewModel @Inject constructor(
 
     fun startRecording(
         videoCapture: VideoCapture<Recorder>,
-        onVideoSaved: (File) -> Unit,
         onError: (String) -> Unit
     ) {
         if (_isRecording.value) return
@@ -126,7 +129,7 @@ class CameraViewModel @Inject constructor(
                                     return@start
                                 }
 
-                                onVideoSaved(outputFile)
+                                _savedVideo.value = outputFile
                                 viewModelScope.launch(Dispatchers.IO) {
                                     val copiedToGallery = copyRecordingToGallery(outputFile)
                                     if (!copiedToGallery) {
@@ -166,6 +169,13 @@ class CameraViewModel @Inject constructor(
         if (currentRecording != null) {
             _isSavingRecording.value = true
             currentRecording?.stop()
+        }
+    }
+
+    fun consumeSavedVideo(file: File) {
+        if (_savedVideo.value?.absolutePath == file.absolutePath) {
+            _savedVideo.value = null
+            _isSavingRecording.value = false
         }
     }
 

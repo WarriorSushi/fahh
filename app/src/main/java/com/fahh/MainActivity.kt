@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -19,7 +20,6 @@ import com.fahh.ui.components.RateUsDialog
 import com.fahh.ui.screens.*
 import com.fahh.ui.theme.FahhTheme
 import com.fahh.utils.ConsentManager
-import com.fahh.utils.FahhWatermarkExporter
 import com.fahh.utils.ShareUtils
 import com.fahh.viewmodel.SoundViewModel
 import com.google.android.play.core.review.ReviewManagerFactory
@@ -53,7 +53,8 @@ class MainActivity : ComponentActivity() {
             FahhTheme {
                 val soundViewModel: SoundViewModel = hiltViewModel()
                 val navController = rememberNavController()
-                var lastVideoFile by remember { mutableStateOf<File?>(null) }
+                var lastVideoPath by rememberSaveable { mutableStateOf<String?>(null) }
+                val lastVideoFile = lastVideoPath?.let(::File)
                 val showRatingPrompt by soundViewModel.showRatingPrompt.collectAsState()
 
                 // Wait for DataStore to resolve, then navigate once
@@ -201,30 +202,9 @@ class MainActivity : ComponentActivity() {
                             onBack = { navController.popBackStack() },
                             onCustomSoundsClick = { navController.navigate(Screen.MySounds.route) },
                             onVideoSaved = { file ->
-                                val watermarkedFile = File(
-                                    file.parentFile,
-                                    "fahh_${file.nameWithoutExtension}.mp4"
-                                )
-                                FahhWatermarkExporter(this@MainActivity).export(
-                                    inputFile = file,
-                                    outputFile = watermarkedFile,
-                                    onSuccess = { exported ->
-                                        runOnUiThread {
-                                            runCatching { file.delete() }
-                                            lastVideoFile = exported
-                                            soundViewModel.onRecordingFinished()
-                                            navController.navigate(Screen.Share.route)
-                                        }
-                                    },
-                                    onError = {
-                                        // Never strand a user's recording if the device exporter fails.
-                                        runOnUiThread {
-                                            lastVideoFile = file
-                                            soundViewModel.onRecordingFinished()
-                                            navController.navigate(Screen.Share.route)
-                                        }
-                                    }
-                                )
+                                lastVideoPath = file.absolutePath
+                                soundViewModel.onRecordingFinished()
+                                navController.navigate(Screen.Share.route)
                             },
                             soundViewModel = soundViewModel
                         )
@@ -256,7 +236,7 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onDelete = {
                                     runCatching { file.delete() }
-                                    lastVideoFile = null
+                                    lastVideoPath = null
                                     navController.popBackStack()
                                 }
                             )
@@ -280,7 +260,7 @@ class MainActivity : ComponentActivity() {
                                 sourceFile = file,
                                 onBack = { navController.popBackStack() },
                                 onTrimmed = { trimmed ->
-                                    lastVideoFile = trimmed
+                                    lastVideoPath = trimmed.absolutePath
                                     navController.popBackStack()
                                 }
                             )

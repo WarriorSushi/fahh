@@ -18,6 +18,8 @@ import javax.inject.Singleton
 class SoundManager @Inject constructor(@ApplicationContext private val context: Context) {
     private val soundPool: SoundPool
     private val soundMap = mutableMapOf<Int, Int>()
+    private val loadedSamples = mutableSetOf<Int>()
+    private val pendingPlays = mutableMapOf<Int, MutableList<Float>>()
     private var customPlayer: MediaPlayer? = null
     private val mainHandler = Handler(Looper.getMainLooper())
     private var customStopAction: Runnable? = null
@@ -32,6 +34,18 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
             .setMaxStreams(10)
             .setAudioAttributes(audioAttributes)
             .build()
+
+        soundPool.setOnLoadCompleteListener { _, sampleId, status ->
+            val queuedVolumes = pendingPlays.remove(sampleId).orEmpty()
+            if (status == 0) {
+                loadedSamples += sampleId
+                queuedVolumes.forEach { volume ->
+                    soundPool.play(sampleId, volume, volume, 1, 0, 1.0f)
+                }
+            } else {
+                soundMap.entries.removeAll { it.value == sampleId }
+            }
+        }
             
         preloadSounds()
     }
@@ -50,9 +64,11 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
         }
     }
 
-    private fun loadSound(resId: Int) {
+    private fun loadSound(resId: Int): Int {
+        soundMap[resId]?.let { return it }
         val soundId = soundPool.load(context, resId, 1)
-        soundMap[resId] = soundId
+        if (soundId != 0) soundMap[resId] = soundId
+        return soundId
     }
 
     fun playSound(sound: Sound, volume: Float = 1.0f) {
@@ -65,17 +81,13 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
     }
 
     private fun playSound(resId: Int, volume: Float = 1.0f) {
-        val soundId = soundMap[resId]
-        if (soundId != null && soundId != 0) {
+        val soundId = soundMap[resId] ?: loadSound(resId)
+        if (soundId == 0) return
+
+        if (soundId in loadedSamples) {
             soundPool.play(soundId, volume, volume, 1, 0, 1.0f)
         } else {
-            // Load on demand then play after a short delay.
-            loadSound(resId)
-            soundPool.setOnLoadCompleteListener { _, sampleId, status ->
-                if (status == 0) {
-                    soundPool.play(sampleId, volume, volume, 1, 0, 1.0f)
-                }
-            }
+            pendingPlays.getOrPut(soundId) { mutableListOf() }.add(volume)
         }
     }
 
@@ -144,6 +156,9 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
 
     fun release() {
         releaseCustomPlayer()
+        pendingPlays.clear()
+        loadedSamples.clear()
+        soundMap.clear()
         soundPool.release()
     }
 }

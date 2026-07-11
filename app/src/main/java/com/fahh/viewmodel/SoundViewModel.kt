@@ -55,12 +55,6 @@ class SoundViewModel @Inject constructor(
         initialValue = true // default true so walkthrough doesn't flash on existing users
     )
 
-    val watermarkEnabled = settingsRepository.watermarkEnabledFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = true
-    )
-
     val streak: StateFlow<Int> = settingsRepository.streakFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -182,12 +176,6 @@ class SoundViewModel @Inject constructor(
     fun completeUpdateOnboarding() {
         viewModelScope.launch {
             settingsRepository.setUpdateOnboardingVersion(CURRENT_UPDATE_ONBOARDING_VERSION)
-        }
-    }
-
-    fun setWatermarkEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsRepository.setWatermarkEnabled(enabled)
         }
     }
 

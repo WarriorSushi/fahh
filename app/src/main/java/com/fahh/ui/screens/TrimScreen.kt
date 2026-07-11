@@ -41,8 +41,6 @@ fun TrimScreen(
     onBack: () -> Unit,
     onTrimmed: (File) -> Unit
 ) {
-    BackHandler { onBack() }
-
     val snackbar = remember { SnackbarHostState() }
     val durationMs = remember(sourceFile.absolutePath) { readDurationMs(sourceFile) }
     val durationSec = (durationMs / 1000f).coerceAtLeast(1f)
@@ -54,6 +52,16 @@ fun TrimScreen(
     var extraRotation by remember { mutableStateOf(0) } // 0, 90, 180, 270
     val scope = rememberCoroutineScope()
 
+    fun requestBack() {
+        if (isSaving) {
+            scope.launch { snackbar.showSnackbar("Please wait for trimming to finish.") }
+        } else {
+            onBack()
+        }
+    }
+
+    BackHandler { requestBack() }
+
     Box(modifier = Modifier.fillMaxSize().background(Background)) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             // Custom HUD
@@ -62,7 +70,7 @@ fun TrimScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = onBack,
+                    onClick = ::requestBack,
                     modifier = Modifier.premiumGlass(CircleShape, alpha = 0.1f).size(48.dp)
                 ) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)

@@ -76,6 +76,7 @@ fun CameraScreen(
     val isRecording by cameraViewModel.isRecording.collectAsState()
     val isSavingRecording by cameraViewModel.isSavingRecording.collectAsState()
     val timer by cameraViewModel.recordingTimer.collectAsState()
+    val savedVideo by cameraViewModel.savedVideo.collectAsState()
     val selectedSound by soundViewModel.selectedSound.collectAsState()
     val sounds by soundViewModel.allSounds.collectAsState()
     val volume by soundViewModel.volume.collectAsState()
@@ -119,7 +120,22 @@ fun CameraScreen(
         )
     }
 
-    BackHandler(enabled = !isSavingRecording) { onBack() }
+    fun requestBack() {
+        when {
+            isRecording -> scope.launch { snackbarHostState.showSnackbar("Stop the recording before leaving.") }
+            isSavingRecording -> scope.launch { snackbarHostState.showSnackbar("Please wait while your recording is saved.") }
+            else -> onBack()
+        }
+    }
+
+    BackHandler { requestBack() }
+
+    LaunchedEffect(savedVideo) {
+        savedVideo?.let { file ->
+            onVideoSaved(file)
+            cameraViewModel.consumeSavedVideo(file)
+        }
+    }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -201,7 +217,7 @@ fun CameraScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
-                        onClick = onBack,
+                        onClick = ::requestBack,
                         modifier = Modifier
                             .premiumGlass(CircleShape, alpha = 0.1f)
                             .size(48.dp)
@@ -323,7 +339,7 @@ fun CameraScreen(
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 if (isRecording) cameraViewModel.stopRecording()
                                 else videoCapture?.let {
-                                    cameraViewModel.startRecording(it, onVideoSaved, { msg ->
+                                    cameraViewModel.startRecording(it, { msg ->
                                         scope.launch { snackbarHostState.showSnackbar(msg) }
                                     })
                                 }
