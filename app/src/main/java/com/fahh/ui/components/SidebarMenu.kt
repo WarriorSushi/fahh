@@ -49,6 +49,7 @@ fun SidebarMenu(
     onVolumeChange: (Float) -> Unit,
     onSoundPreview: (Sound) -> Unit,
     onSoundSelected: (Sound) -> Unit,
+    soundPressCounts: Map<String, Int> = emptyMap(),
     noticeMessage: String?,
     onDismissNotice: () -> Unit,
     onClose: () -> Unit,
@@ -193,6 +194,7 @@ fun SidebarMenu(
                 selectedSound = selectedSound,
                 onSoundPreview = onSoundPreview,
                 onSoundSelected = onSoundSelected,
+                soundPressCounts = soundPressCounts,
                 onMoreSoundsClick = if (showMoreSoundsAction && !fullLibraryOpen) ({
                     onOpenMoreSounds?.invoke() ?: run { fullLibraryOpen = true }
                 }) else null,
@@ -272,7 +274,7 @@ fun SidebarMenu(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Settings + Tip Jar row
+                // More cool + Tip Jar row
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -289,14 +291,14 @@ fun SidebarMenu(
                             modifier = Modifier.padding(vertical = 10.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = "Settings",
+                                imageVector = Icons.Default.Tune,
+                                contentDescription = "More cool",
                                 tint = Color.White.copy(alpha = 0.6f),
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Settings",
+                                text = "More cool",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Color.White.copy(alpha = 0.6f),
                                 fontWeight = FontWeight.SemiBold

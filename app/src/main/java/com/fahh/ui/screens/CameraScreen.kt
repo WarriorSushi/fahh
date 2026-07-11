@@ -79,6 +79,7 @@ fun CameraScreen(
     val selectedSound by soundViewModel.selectedSound.collectAsState()
     val sounds by soundViewModel.allSounds.collectAsState()
     val volume by soundViewModel.volume.collectAsState()
+    val soundPressCounts by soundViewModel.soundPressCounts.collectAsState()
     val cameraSelector by cameraViewModel.cameraSelector.collectAsState()
     val cameraPermissions = remember { requiredCameraPermissions() }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -162,6 +163,7 @@ fun CameraScreen(
                     onDismissNotice = {},
                     onClose = { scope.launch { drawerState.close() } },
                     onPrivacyClick = {},
+                    soundPressCounts = soundPressCounts,
                     onMySoundsClick = {
                         if (isRecording) {
                             scope.launch { snackbarHostState.showSnackbar("Finish recording before changing custom sounds.") }

@@ -118,6 +118,7 @@ import com.fahh.ui.components.SidebarMenu
 import com.fahh.ui.components.SoundButton
 import com.fahh.utils.AdManager
 import com.fahh.utils.ConsentManager
+import com.fahh.utils.ShareUtils
 import com.fahh.viewmodel.SoundViewModel
 import com.google.android.gms.ads.rewarded.RewardedAd
 import kotlinx.coroutines.delay
@@ -153,6 +154,7 @@ fun MainScreen(
     val volume by viewModel.volume.collectAsState()
     val streak by viewModel.streak.collectAsState()
     val totalFahhCount by viewModel.totalFahhCount.collectAsState()
+    val soundPressCounts by viewModel.soundPressCounts.collectAsState()
     val highestComboTier by viewModel.highestComboTier.collectAsState()
 
     val context = LocalContext.current
@@ -351,6 +353,7 @@ fun MainScreen(
                     onDismissNotice = {},
                     onClose = { scope.launch { newSoundsDrawerState.close() } },
                     onPrivacyClick = {},
+                    soundPressCounts = soundPressCounts,
                     title = "New sounds",
                     subtitle = "Watch 1 ad to unlock a sound forever",
                     showMoreSoundsAction = false,
@@ -379,6 +382,10 @@ fun MainScreen(
                         if (settingsVisible) {
                             SettingsSheet(
                                 highestComboTier = highestComboTier,
+                                totalPresses = totalFahhCount,
+                                sounds = sounds,
+                                soundPressCounts = soundPressCounts,
+                                onShareText = { text -> ShareUtils.shareText(context, text, "Share Fahh stats") },
                                 onPrivacyClick = {
                                     scope.launch { drawerState.close() }
                                     showSettings = false
@@ -432,6 +439,7 @@ fun MainScreen(
                                     scope.launch { drawerState.close() }
                                     onPrivacyClick()
                                 },
+                                soundPressCounts = soundPressCounts,
                                 onMySoundsClick = {
                                     scope.launch { drawerState.close() }
                                     onMySoundsClick()

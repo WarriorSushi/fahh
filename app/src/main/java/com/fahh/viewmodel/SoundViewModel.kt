@@ -73,6 +73,12 @@ class SoundViewModel @Inject constructor(
         initialValue = 0
     )
 
+    val soundPressCounts: StateFlow<Map<String, Int>> = settingsRepository.soundPressCountsFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyMap()
+    )
+
     val highestComboTier: StateFlow<Int> = settingsRepository.highestComboTierFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -186,9 +192,11 @@ class SoundViewModel @Inject constructor(
     }
 
     fun playSelectedSound() {
-        soundManager.playSound(_selectedSound.value, volume.value)
+        val sound = _selectedSound.value
+        soundManager.playSound(sound, volume.value)
         viewModelScope.launch {
             settingsRepository.incrementTotalFahhCount()
+            settingsRepository.incrementSoundPress(sound.id)
             checkSoundPlayMilestone()
         }
     }

@@ -37,6 +37,7 @@ fun SoundGrid(
     selectedSound: Sound,
     onSoundPreview: (Sound) -> Unit,
     onSoundSelected: (Sound) -> Unit,
+    soundPressCounts: Map<String, Int> = emptyMap(),
     onMoreSoundsClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -54,6 +55,7 @@ fun SoundGrid(
             SoundTile(
                 sound = sound,
                 isSelected = sound == selectedSound,
+                pressCount = soundPressCounts[sound.id] ?: 0,
                 onPreview = { onSoundPreview(sound) },
                 onSelect = { onSoundSelected(sound) }
             )
@@ -91,8 +93,9 @@ fun SoundGrid(
             }
             itemsIndexed(locked) { _, sound ->
                 SoundTile(
-                    sound = sound,
-                    isSelected = sound == selectedSound,
+                sound = sound,
+                isSelected = sound == selectedSound,
+                pressCount = soundPressCounts[sound.id] ?: 0,
                     onPreview = { onSoundPreview(sound) },
                     onSelect = { onSoundSelected(sound) }
                 )
@@ -105,6 +108,7 @@ fun SoundGrid(
 private fun SoundTile(
     sound: Sound,
     isSelected: Boolean,
+    pressCount: Int,
     onPreview: () -> Unit,
     onSelect: () -> Unit
 ) {
@@ -227,24 +231,27 @@ private fun SoundTile(
                         modifier = Modifier.weight(1f)
                     )
 
-                    val statusIcon = when {
-                        sound.isLocked -> Icons.Default.Lock
-                        isSelected -> Icons.Default.Check
-                        else -> null
-                    }
-                    if (statusIcon != null) {
+                    if (!sound.isLocked) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isSelected) Primary.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.08f)
+                        ) {
+                            Text(
+                                text = "$pressCount presses",
+                                color = if (isSelected) Primary else Color.White.copy(alpha = 0.7f),
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                            )
+                        }
+                    } else {
                         Surface(
                             shape = CircleShape,
-                            color = if (isSelected) Primary else Color.White.copy(alpha = 0.08f),
+                            color = Color.White.copy(alpha = 0.08f),
                             modifier = Modifier.size(22.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = statusIcon,
-                                    contentDescription = null,
-                                    tint = if (isSelected) Color.White else Color.White.copy(alpha = 0.4f),
-                                    modifier = Modifier.size(12.dp)
-                                )
+                                Icon(Icons.Default.Lock, null, tint = Color.White.copy(alpha = 0.4f), modifier = Modifier.size(12.dp))
                             }
                         }
                     }

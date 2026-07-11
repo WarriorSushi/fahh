@@ -22,6 +22,10 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 @Singleton
 class SettingsRepository @Inject constructor(@ApplicationContext private val context: Context) {
 
+    private companion object {
+        const val SOUND_PRESS_PREFIX = "sound_press_"
+    }
+
     private object PreferencesKeys {
         val VOLUME = floatPreferencesKey("volume")
         val FIRST_RUN = androidx.datastore.preferences.core.booleanPreferencesKey("first_run")
@@ -228,6 +232,14 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         preferences[PreferencesKeys.TOTAL_FAHH_COUNT] ?: 0
     }
 
+    /** Local press totals, keyed by the stable sound ID. Never leave this device. */
+    val soundPressCountsFlow: Flow<Map<String, Int>> = context.dataStore.data.map { preferences ->
+        preferences.asMap().mapNotNull { (key, value) ->
+            val id = key.name.removePrefix(SOUND_PRESS_PREFIX)
+            if (key.name.startsWith(SOUND_PRESS_PREFIX) && value is Int) id to value else null
+        }.toMap()
+    }
+
     suspend fun recordDailyActivity() {
         val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
         context.dataStore.edit { preferences ->
@@ -252,6 +264,16 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             val current = preferences[PreferencesKeys.TOTAL_FAHH_COUNT] ?: 0
             newCount = current + 1
             preferences[PreferencesKeys.TOTAL_FAHH_COUNT] = newCount
+        }
+        return newCount
+    }
+
+    suspend fun incrementSoundPress(soundId: String): Int {
+        val key = intPreferencesKey("$SOUND_PRESS_PREFIX$soundId")
+        var newCount = 0
+        context.dataStore.edit { preferences ->
+            newCount = (preferences[key] ?: 0) + 1
+            preferences[key] = newCount
         }
         return newCount
     }

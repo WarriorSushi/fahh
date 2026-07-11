@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.NewReleases
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -22,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fahh.ui.theme.Primary
+import com.fahh.data.model.Sound
 
 private data class MilestoneTier(
     val index: Int,
@@ -50,11 +52,19 @@ private val milestones = listOf(
 @Composable
 fun SettingsSheet(
     highestComboTier: Int = 0,
+    totalPresses: Int = 0,
+    sounds: List<Sound> = emptyList(),
+    soundPressCounts: Map<String, Int> = emptyMap(),
+    onShareText: (String) -> Unit = {},
     onPrivacyClick: () -> Unit,
     onComingSoonClick: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val topSounds = sounds
+        .filter { !it.isLocked }
+        .sortedByDescending { soundPressCounts[it.id] ?: 0 }
+        .take(3)
     Box(
         modifier = modifier
             .fillMaxHeight()
@@ -85,7 +95,7 @@ fun SettingsSheet(
                     )
                 }
                 Text(
-                    text = "Settings",
+                    text = "More cool",
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.White,
                     fontWeight = FontWeight.Black
@@ -105,6 +115,41 @@ fun SettingsSheet(
                     .verticalScroll(rememberScrollState())
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "YOUR FAHH RECEIPTS",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.42f),
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.6.sp,
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                BigRedButtonShareCard(
+                    totalPresses = totalPresses,
+                    onShare = {
+                        onShareText("I pressed a big red button $totalPresses times on Fahh. Completely normal behaviour. 🔴")
+                    }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                TopSoundsShareCard(
+                    topSounds = topSounds,
+                    soundPressCounts = soundPressCounts,
+                    onShare = {
+                        val ranking = topSounds.mapIndexed { index, sound ->
+                            "${index + 1}. ${sound.name}: ${soundPressCounts[sound.id] ?: 0} presses"
+                        }.joinToString("\n")
+                        val shareText = if (topSounds.any { (soundPressCounts[it.id] ?: 0) > 0 }) {
+                            "My top Fahh sounds:\n$ranking"
+                        } else {
+                            "No presses yet. I need to press the big red button on Fahh."
+                        }
+                        onShareText(shareText)
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(22.dp))
 
                 // Coming Soon button
                 Surface(
@@ -285,5 +330,62 @@ fun SettingsSheet(
                     .padding(bottom = 24.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun BigRedButtonShareCard(totalPresses: Int, onShare: () -> Unit) {
+    Surface(
+        color = Color(0xFF381B22),
+        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.padding(horizontal = 20.dp).fillMaxWidth()
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text("I pressed a big red button", color = Color.White.copy(alpha = 0.82f), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 5.dp)) {
+                Text("$totalPresses", color = Color(0xFFFF8A78), fontWeight = FontWeight.Black, fontSize = 38.sp)
+                Text(" times", color = Color.White.copy(alpha = 0.66f), fontSize = 14.sp, modifier = Modifier.padding(start = 5.dp, bottom = 7.dp))
+            }
+            Text("Completely normal behaviour.", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp)
+            ShareButton(onClick = onShare, modifier = Modifier.padding(top = 14.dp))
+        }
+    }
+}
+
+@Composable
+private fun TopSoundsShareCard(topSounds: List<Sound>, soundPressCounts: Map<String, Int>, onShare: () -> Unit) {
+    Surface(
+        color = Color(0xFF172B36),
+        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.padding(horizontal = 20.dp).fillMaxWidth()
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text("My top 3 sounds", color = Color.White, fontWeight = FontWeight.Black, fontSize = 15.sp)
+            if (topSounds.any { (soundPressCounts[it.id] ?: 0) > 0 }) {
+                topSounds.forEachIndexed { index, sound ->
+                    Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("${index + 1}", color = Primary, fontWeight = FontWeight.Black, fontSize = 13.sp, modifier = Modifier.width(22.dp))
+                        Text(sound.name, color = Color.White.copy(alpha = 0.86f), fontWeight = FontWeight.SemiBold, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                        Text("${soundPressCounts[sound.id] ?: 0}", color = Color.White.copy(alpha = 0.58f), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                    }
+                }
+            } else {
+                Text("Your favourites will appear after a few presses.", color = Color.White.copy(alpha = 0.55f), fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+            }
+            ShareButton(onClick = onShare, modifier = Modifier.padding(top = 14.dp))
+        }
+    }
+}
+
+@Composable
+private fun ShareButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth().height(42.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Primary)
+    ) {
+        Icon(Icons.Default.Share, null, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(7.dp))
+        Text("Share this", fontWeight = FontWeight.Bold, fontSize = 12.sp)
     }
 }
