@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -47,8 +48,12 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
     val customSoundSlots by soundViewModel.customSoundSlots.collectAsState()
     val recording by soundViewModel.isCustomRecording.collectAsState()
     val sounds by soundViewModel.allSounds.collectAsState()
+    val selectedSound by soundViewModel.selectedSound.collectAsState()
     val customSounds = sounds.filter { it.filePath != null }
     var name by remember { mutableStateOf("My Fahh") }
+    var secondsRemaining by remember { mutableIntStateOf(0) }
+    var pendingDelete by remember { mutableStateOf<Sound?>(null) }
+    var lastSavedId by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var rewardedAd by remember { mutableStateOf<RewardedAd?>(null) }
     var loadingAd by remember { mutableStateOf(false) }
@@ -67,8 +72,18 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
     LaunchedEffect(Unit) { loadRewardedAd() }
     LaunchedEffect(recording) {
         if (recording) {
-            delay(8_000)
-            soundViewModel.stopCustomSoundRecording(name).onSuccess { soundViewModel.selectSound(it) }
+            secondsRemaining = 8
+            repeat(8) {
+                delay(1_000)
+                secondsRemaining = 7 - it
+            }
+            soundViewModel.stopCustomSoundRecording(name).onSuccess {
+                soundViewModel.selectSound(it)
+                lastSavedId = it.id
+                name = "My Fahh"
+            }.onFailure { error = it.message }
+        } else {
+            secondsRemaining = 0
         }
     }
 
@@ -100,6 +115,14 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
         }
     }
 
+    fun saveRecording() {
+        soundViewModel.stopCustomSoundRecording(name).onSuccess {
+            soundViewModel.selectSound(it)
+            lastSavedId = it.id
+            name = "My Fahh"
+        }.onFailure { error = it.message }
+    }
+
     Scaffold(
         containerColor = Background,
         topBar = {
@@ -111,40 +134,105 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(24.dp)) {
-            Text("Your private reaction vault. Clips stay on this device.", color = Color.White.copy(alpha = 0.7f), fontSize = 15.sp)
-            Spacer(Modifier.height(18.dp))
-            Text("${customSounds.size} saved · $customSoundSlots unlocked slots", color = Primary, fontWeight = FontWeight.Bold)
-            Text("Add another slot whenever you want. There is no five-sound cap.", color = Color.White.copy(alpha = 0.55f), fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
-                Spacer(Modifier.height(14.dp))
-                OutlinedTextField(value = name, onValueChange = { name = it.take(24) }, label = { Text("Sound name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                Spacer(Modifier.height(10.dp))
-                Button(
-                    onClick = {
-                        if (recording) {
-                            soundViewModel.stopCustomSoundRecording(name).onSuccess { soundViewModel.selectSound(it) }.onFailure { error = it.message }
-                        } else if (customSounds.size >= customSoundSlots) {
-                            unlockSlotWithReward()
-                        } else permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                    },
-                    enabled = recording || rewardedAd != null || !loadingAd || customSounds.size < customSoundSlots,
-                    colors = ButtonDefaults.buttonColors(containerColor = if (recording) Color(0xFFE53935) else Primary),
-                    modifier = Modifier.fillMaxWidth().height(56.dp)
-                ) { Icon(if (recording) Icons.Default.Stop else Icons.Default.Mic, null); Spacer(Modifier.width(8.dp)); Text(if (recording) "Stop and save" else if (customSounds.size >= customSoundSlots) if (loadingAd) "Loading ad…" else "Watch 1 ad for a sound slot" else "Record up to 8 seconds") }
-                if (recording) Text("Recording… tap stop when the chaos is perfect.", color = Primary, modifier = Modifier.padding(top = 8.dp))
-                Spacer(Modifier.height(18.dp))
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(customSounds, key = { it.id }) { sound -> CustomSoundRow(sound, { soundViewModel.playSoundPreview(sound) }, { soundViewModel.selectSound(sound) }, { soundViewModel.deleteCustomSound(sound.id) }) }
+            Text("Your private reaction vault", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black)
+            Text("Record short reactions. They stay on this device.", color = Color.White.copy(alpha = 0.62f), fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
+            Spacer(Modifier.height(16.dp))
+
+            Surface(color = SurfaceHigh, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp)) {
+                    Text("${customSounds.size} saved · $customSoundSlots slots unlocked", color = Primary, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = if (customSounds.size < customSoundSlots) "You have a recording slot ready." else "Watch one optional ad to add your next recording slot.",
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 3.dp)
+                    )
                 }
+            }
+
+            Spacer(Modifier.height(14.dp))
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it.take(24) },
+                label = { Text("Name this reaction") },
+                supportingText = { Text("You can rename it before saving") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(10.dp))
+            Button(
+                onClick = {
+                    if (recording) saveRecording()
+                    else if (customSounds.size >= customSoundSlots) unlockSlotWithReward()
+                    else permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                },
+                enabled = recording || rewardedAd != null || !loadingAd || customSounds.size < customSoundSlots,
+                colors = ButtonDefaults.buttonColors(containerColor = if (recording) Color(0xFFE53935) else Primary),
+                modifier = Modifier.fillMaxWidth().height(58.dp)
+            ) {
+                Icon(if (recording) Icons.Default.Stop else Icons.Default.Mic, null)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    if (recording) "Stop and save (${secondsRemaining}s)"
+                    else if (customSounds.size >= customSoundSlots) if (loadingAd) "Loading ad…" else "Watch 1 ad to add a slot"
+                    else "Record up to 8 seconds",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            if (recording) {
+                LinearProgressIndicator(
+                    progress = secondsRemaining / 8f,
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                    color = Primary,
+                    trackColor = Color.White.copy(alpha = 0.12f)
+                )
+                OutlinedButton(
+                    onClick = { soundViewModel.cancelCustomSoundRecording() },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                ) { Text("Discard recording") }
+            }
+            Spacer(Modifier.height(18.dp))
+            Text("YOUR REACTIONS", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+            Spacer(Modifier.height(8.dp))
+            if (customSounds.isEmpty()) {
+                Text("Your saved reactions will appear here. Record one, then select it for the main button or camera.", color = Color.White.copy(alpha = 0.52f), fontSize = 14.sp, modifier = Modifier.padding(vertical = 16.dp))
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(customSounds, key = { it.id }) { sound ->
+                        CustomSoundRow(
+                            sound = sound,
+                            isSelected = selectedSound.id == sound.id,
+                            isNewlySaved = lastSavedId == sound.id,
+                            onPreview = { soundViewModel.playSoundPreview(sound) },
+                            onSelect = { soundViewModel.selectSound(sound) },
+                            onDelete = { pendingDelete = sound }
+                        )
+                    }
+                }
+            }
             error?.let { Text(it, color = Color(0xFFFF8A80), modifier = Modifier.padding(top = 12.dp)) }
         }
+    }
+
+    pendingDelete?.let { sound ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text("Delete ${sound.name}?") },
+            text = { Text("This removes the private recording from this device and frees its slot.") },
+            confirmButton = { TextButton(onClick = { soundViewModel.deleteCustomSound(sound.id); pendingDelete = null }) { Text("Delete", color = Color(0xFFFF8A80)) } },
+            dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text("Keep it") } }
+        )
     }
 }
 
 @Composable
-private fun CustomSoundRow(sound: Sound, onPreview: () -> Unit, onSelect: () -> Unit, onDelete: () -> Unit) {
-    Surface(onClick = onSelect, color = SurfaceHigh, shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
+private fun CustomSoundRow(sound: Sound, isSelected: Boolean, isNewlySaved: Boolean, onPreview: () -> Unit, onSelect: () -> Unit, onDelete: () -> Unit) {
+    Surface(onClick = onSelect, color = if (isSelected) Primary.copy(alpha = 0.18f) else SurfaceHigh, shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("✦", color = Primary, fontSize = 20.sp); Spacer(Modifier.width(10.dp)); Text(sound.name, color = Color.White, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+            Text("✦", color = Primary, fontSize = 20.sp); Spacer(Modifier.width(10.dp)); Column(modifier = Modifier.weight(1f)) {
+                Text(sound.name, color = Color.White, fontWeight = FontWeight.Bold)
+                if (isSelected || isNewlySaved) Text(if (isSelected) "Selected for Fahh" else "Saved and ready", color = Primary, fontSize = 11.sp)
+            }
             IconButton(onClick = onPreview) { Icon(Icons.Default.PlayArrow, "Preview ${sound.name}", tint = Color.White) }
             IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, "Delete ${sound.name}", tint = Color.White.copy(alpha = 0.7f)) }
         }
