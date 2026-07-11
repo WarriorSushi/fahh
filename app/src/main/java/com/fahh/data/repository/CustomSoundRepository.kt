@@ -20,7 +20,7 @@ class CustomSoundRepository @Inject constructor(@ApplicationContext private val 
 
     fun save(name: String, file: File): Sound {
         val sound = Sound(
-            name = name.trim().ifBlank { "My Fahh" },
+            name = name.trim().ifBlank { nextDefaultName() },
             resId = 0,
             icon = "✦",
             packName = "Custom sounds",
@@ -66,6 +66,17 @@ class CustomSoundRepository @Inject constructor(@ApplicationContext private val 
             }
         }
     }.getOrDefault(emptyList())
+
+    private fun nextDefaultName(): String {
+        val highestExistingNumber = _sounds.value.mapNotNull { sound ->
+            Regex("^My sound (\\d+)$", RegexOption.IGNORE_CASE)
+                .matchEntire(sound.name)
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.toIntOrNull()
+        }.maxOrNull() ?: 0
+        return "My sound ${highestExistingNumber + 1}"
+    }
 
     private fun persist() {
         val entries = JSONArray()

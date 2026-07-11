@@ -61,7 +61,8 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
     val sounds by soundViewModel.allSounds.collectAsState()
     val selectedSound by soundViewModel.selectedSound.collectAsState()
     val customSounds = sounds.filter { it.filePath != null }
-    var draftName by remember { mutableStateOf("My Fahh") }
+    var draftName by remember { mutableStateOf("My sound 1") }
+    var draftNameTouched by remember { mutableStateOf(false) }
     var secondsRemaining by remember { mutableIntStateOf(0) }
     var pendingDelete by remember { mutableStateOf<Sound?>(null) }
     var editingSound by remember { mutableStateOf<Sound?>(null) }
@@ -86,7 +87,8 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
         soundViewModel.stopCustomSoundRecording(draftName).onSuccess {
             soundViewModel.selectSound(it)
             lastSavedId = it.id
-            draftName = "My Fahh"
+            draftNameTouched = false
+            draftName = nextCustomSoundName(customSounds + it)
             showSlotRequest = false
         }.onFailure { error = it.message }
     }
@@ -94,6 +96,11 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
     LaunchedEffect(Unit) { loadRewardedAd() }
     LaunchedEffect(customSoundSlots, customSounds.size) {
         if (customSounds.size < customSoundSlots) showSlotRequest = false
+    }
+    LaunchedEffect(customSounds) {
+        if (!draftNameTouched && !recording) {
+            draftName = nextCustomSoundName(customSounds)
+        }
     }
     LaunchedEffect(recording) {
         if (!recording) {
@@ -175,7 +182,7 @@ fun MySoundsScreen(onBack: () -> Unit, soundViewModel: SoundViewModel) {
                 item("ready-slot") {
                     ReadyToRecordCard(
                         name = draftName,
-                        onNameChange = { draftName = it.take(24) },
+                        onNameChange = { draftName = it.take(24); draftNameTouched = true },
                         recording = recording,
                         secondsRemaining = secondsRemaining,
                         onRecord = { permissionLauncher.launch(Manifest.permission.RECORD_AUDIO) },
@@ -451,5 +458,16 @@ private fun readAudioDurationMs(path: String?): Long = runCatching {
 }.getOrDefault(5_000L)
 
 private fun formatAudioTime(valueMs: Float): String = "%.1fs".format(valueMs / 1_000f)
+
+private fun nextCustomSoundName(sounds: List<Sound>): String {
+    val highestExistingNumber = sounds.mapNotNull { sound ->
+        Regex("^My sound (\\d+)$", RegexOption.IGNORE_CASE)
+            .matchEntire(sound.name)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.toIntOrNull()
+    }.maxOrNull() ?: 0
+    return "My sound ${highestExistingNumber + 1}"
+}
 
 private fun Context.findActivity(): Activity? = when (this) { is Activity -> this; is ContextWrapper -> baseContext.findActivity(); else -> null }
